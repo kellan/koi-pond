@@ -47,8 +47,14 @@ function createKoiAtClick(event) {
         ease: "power1.inOut"
     });
     
-    // Add the new koi to the SVG
-    svg.appendChild(newKoi);
+    // Insert the new koi before the first lily pad to ensure it appears under lily pads
+    const firstLilyPad = svg.querySelector('.lily-pad');
+    if (firstLilyPad) {
+        svg.insertBefore(newKoi, firstLilyPad);
+    } else {
+        // If no lily pads exist, just append
+        svg.appendChild(newKoi);
+    }
     
     // Animate the new koi
     animateKoi(newKoi);
@@ -66,11 +72,11 @@ function initKoiPond() {
     svg.setAttribute('preserveAspectRatio', 'xMinYMin slice'); // Changed to slice mode to ensure full coverage
     container.appendChild(svg);
     
-    // Create koi fish
-    createKoiFish(svg);
-    
-    // Create lily pads
+    // Create lily pads first so they appear behind the fish
     createLilyPads(svg);
+    
+    // Create koi fish on top of lily pads
+    createKoiFish(svg);
     
     // Start animations
     animateElements();
