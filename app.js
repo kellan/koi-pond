@@ -27,21 +27,21 @@ function initKoiPond() {
 }
 
 function createKoiFish(svg) {
-    // Create first koi fish
+    // Create first koi fish - tail points at 45 degrees, so fish will swim at 225 degrees
     const koi1 = createSingleKoi({
         x: 300,
         y: 400,
-        rotation: 45,
+        rotation: 45,  // Tail direction
         scale: 1,
         spotCount: 3
     });
     svg.appendChild(koi1);
     
-    // Create second koi fish with variations
+    // Create second koi fish with variations - tail points at -30 degrees, so fish will swim at 150 degrees
     const koi2 = createSingleKoi({
         x: 600,
         y: 700,
-        rotation: -30,
+        rotation: -30,  // Tail direction
         scale: 0.8,
         spotCount: 4
     });
@@ -125,20 +125,39 @@ function animateElements() {
 }
 
 function animateKoi(koi) {
-    // Get random points for the koi to swim to
+    // Get current transform to extract initial position and rotation
+    const transform = koi.getAttribute('transform');
+    const initialX = parseFloat(transform.split('translate(')[1].split(',')[0]);
+    const initialY = parseFloat(transform.split(',')[1].split(')')[0]);
+    const initialRotation = parseFloat(transform.split('rotate(')[1].split(')')[0]);
+    
+    // Get random points for the koi to swim to, ensuring they swim in the opposite direction of their tail
     const points = [];
     for (let i = 0; i < 5; i++) {
+        // Calculate a new position that's in the opposite direction of the tail
+        const currentRotationRad = (initialRotation + i * 72) * Math.PI / 180;
+        // Move in the opposite direction of where the tail points
+        const distanceToMove = 300 + Math.random() * 500;
+        const newX = initialX + Math.cos(currentRotationRad) * distanceToMove;
+        const newY = initialY + Math.sin(currentRotationRad) * distanceToMove;
+        
+        // Ensure the fish stays within bounds
+        const boundedX = Math.max(100, Math.min(900, newX));
+        const boundedY = Math.max(100, Math.min(900, newY));
+        
+        // New rotation should be in the direction of movement (opposite of tail)
+        const newRotation = (initialRotation + 180 + Math.random() * 60 - 30) % 360;
+        
         points.push({
-            x: Math.random() * 800 + 100,
-            y: Math.random() * 800 + 100,
-            rotation: Math.random() * 360
+            x: boundedX,
+            y: boundedY,
+            rotation: newRotation
         });
     }
     
     // Create a timeline for smooth movement
     const timeline = gsap.timeline({
         repeat: -1,
-        yoyo: true,
         ease: "power1.inOut"
     });
     
