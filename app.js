@@ -2,7 +2,57 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('App loaded');
     initKoiPond();
+    
+    // Add click event listener to create new koi fish
+    document.getElementById('pond-container').addEventListener('click', function(event) {
+        createKoiAtClick(event);
+    });
 });
+
+// Function to create a new koi fish at the clicked position
+function createKoiAtClick(event) {
+    const svg = document.getElementById('pond');
+    if (!svg) return;
+    
+    // Get click coordinates relative to the SVG
+    const svgRect = svg.getBoundingClientRect();
+    const x = event.clientX - svgRect.left;
+    const y = event.clientY - svgRect.top;
+    
+    // Convert screen coordinates to SVG viewBox coordinates
+    const viewBox = svg.viewBox.baseVal;
+    const svgWidth = svgRect.width;
+    const svgHeight = svgRect.height;
+    
+    const svgX = (x / svgWidth) * viewBox.width;
+    const svgY = (y / svgHeight) * viewBox.height;
+    
+    // Create a new koi at the click position with random attributes
+    const rotation = Math.random() * 360;
+    const scale = 0.7 + Math.random() * 0.5;
+    const spotCount = 2 + Math.floor(Math.random() * 4);
+    
+    const newKoi = createSingleKoi({
+        x: svgX,
+        y: svgY,
+        rotation: rotation,
+        scale: scale,
+        spotCount: spotCount
+    });
+    
+    // Add entrance animation
+    gsap.from(newKoi, {
+        attr: { opacity: 0 },
+        duration: 0.5,
+        ease: "power1.inOut"
+    });
+    
+    // Add the new koi to the SVG
+    svg.appendChild(newKoi);
+    
+    // Animate the new koi
+    animateKoi(newKoi);
+}
 
 function initKoiPond() {
     const container = document.getElementById('pond-container');
@@ -54,6 +104,7 @@ function createSingleKoi(options) {
     const koiGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     koiGroup.classList.add('koi');
     koiGroup.setAttribute('transform', `translate(${options.x}, ${options.y}) rotate(${options.rotation}) scale(${options.scale})`);
+    koiGroup.setAttribute('opacity', '1'); // Ensure full opacity for new fish
     
     // Create koi body (white ellipse)
     const body = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
@@ -176,17 +227,28 @@ function animateElements() {
     // Animate koi fish
     const koi = document.querySelectorAll('.koi');
     koi.forEach(fish => {
-        animateKoi(fish);
+        // Only animate fish that don't already have animations
+        if (!fish.hasAttribute('data-animated')) {
+            animateKoi(fish);
+            fish.setAttribute('data-animated', 'true');
+        }
     });
     
     // Animate lily pads
     const lilyPads = document.querySelectorAll('.lily-pad');
     lilyPads.forEach(pad => {
-        animateLilyPad(pad);
+        // Only animate lily pads that don't already have animations
+        if (!pad.hasAttribute('data-animated')) {
+            animateLilyPad(pad);
+            pad.setAttribute('data-animated', 'true');
+        }
     });
 }
 
 function animateKoi(koi) {
+    // Skip if this koi is already being animated
+    if (koi.hasAttribute('data-timeline')) return;
+    
     // Get current transform to extract initial position and rotation
     const transform = koi.getAttribute('transform');
     const initialX = parseFloat(transform.split('translate(')[1].split(',')[0]);
@@ -312,6 +374,8 @@ function animateKoi(koi) {
     const timeline = gsap.timeline({
         repeat: -1,
         onRepeat: function() {
+            // Store reference to the timeline on the koi element
+            koi.setAttribute('data-timeline', 'active');
             // When the animation repeats, reposition the fish at the opposite edge
             const lastPoint = points[points.length - 1];
             
