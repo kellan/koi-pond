@@ -27,21 +27,23 @@ function initKoiPond() {
 }
 
 function createKoiFish(svg) {
-    // Create first koi fish - rotation is the direction the fish is facing/swimming
+    // Create fish at different edges with directions that will take them across the screen
+    
+    // First fish - starts at left edge, swimming right (with slight angle)
     const koi1 = createSingleKoi({
-        x: 300,
-        y: 400,
-        rotation: 45,  // Head direction (fish swims this way)
+        x: 50,
+        y: 200,
+        rotation: 0,  // Swimming right
         scale: 1,
         spotCount: 3
     });
     svg.appendChild(koi1);
     
-    // Create second koi fish with variations
+    // Second fish - starts at bottom edge, swimming up (with slight angle)
     const koi2 = createSingleKoi({
-        x: 600,
-        y: 700,
-        rotation: 150,  // Head direction (fish swims this way)
+        x: 700,
+        y: 550,
+        rotation: 270,  // Swimming up
         scale: 0.8,
         spotCount: 4
     });
@@ -173,43 +175,102 @@ function animateKoi(koi) {
     const initialY = parseFloat(transform.split(',')[1].split(')')[0]);
     const initialRotation = parseFloat(transform.split('rotate(')[1].split(')')[0]);
     
-    // Get random points for the koi to swim to, ensuring they swim in the direction they're facing
+    // Determine if this is a horizontal or vertical swimming fish
+    const isHorizontalSwimmer = (initialRotation % 180 < 45 || initialRotation % 180 > 135);
+    
+    // Create points that will take the fish across the screen
     const points = [];
-    for (let i = 0; i < 5; i++) {
-        // Calculate a new position in the general direction the fish is facing
-        // with some random variation
-        const variationAngle = Math.random() * 60 - 30; // +/- 30 degrees variation
-        const currentRotationRad = (initialRotation + variationAngle) * Math.PI / 180;
+    
+    if (isHorizontalSwimmer) {
+        // For horizontal swimmers (left to right or right to left)
+        const swimDirection = Math.cos(initialRotation * Math.PI / 180) > 0 ? 1 : -1; // 1 for right, -1 for left
         
-        // Move in the direction the fish is facing
-        const distanceToMove = 300 + Math.random() * 500;
-        const newX = initialX + Math.cos(currentRotationRad) * distanceToMove;
-        const newY = initialY + Math.sin(currentRotationRad) * distanceToMove;
+        // Create a path that goes from one side to the other
+        const screenWidth = 1000;
+        const numPoints = 5;
         
-        // Ensure the fish stays within bounds
-        const boundedX = Math.max(50, Math.min(950, newX));
-        const boundedY = Math.max(50, Math.min(550, newY));
+        for (let i = 0; i < numPoints; i++) {
+            // Calculate position along the horizontal path
+            const progress = (i + 1) / numPoints;
+            const newX = initialX + swimDirection * progress * screenWidth;
+            
+            // Add some vertical variation
+            const verticalVariation = Math.random() * 200 - 100;
+            const newY = Math.max(50, Math.min(550, initialY + verticalVariation));
+            
+            // Small rotation variations
+            const rotationVariation = Math.random() * 20 - 10;
+            const newRotation = (initialRotation + rotationVariation) % 360;
+            
+            points.push({
+                x: Math.max(50, Math.min(950, newX)),
+                y: newY,
+                rotation: newRotation
+            });
+        }
+    } else {
+        // For vertical swimmers (top to bottom or bottom to top)
+        const swimDirection = Math.sin(initialRotation * Math.PI / 180) > 0 ? 1 : -1; // 1 for down, -1 for up
         
-        // New rotation should be in the direction of movement (where the fish is heading)
-        const newRotation = (initialRotation + variationAngle) % 360;
+        // Create a path that goes from top to bottom or vice versa
+        const screenHeight = 600;
+        const numPoints = 5;
         
-        points.push({
-            x: boundedX,
-            y: boundedY,
-            rotation: newRotation
-        });
+        for (let i = 0; i < numPoints; i++) {
+            // Calculate position along the vertical path
+            const progress = (i + 1) / numPoints;
+            const newY = initialY + swimDirection * progress * screenHeight;
+            
+            // Add some horizontal variation
+            const horizontalVariation = Math.random() * 200 - 100;
+            const newX = Math.max(50, Math.min(950, initialX + horizontalVariation));
+            
+            // Small rotation variations
+            const rotationVariation = Math.random() * 20 - 10;
+            const newRotation = (initialRotation + rotationVariation) % 360;
+            
+            points.push({
+                x: newX,
+                y: Math.max(50, Math.min(550, newY)),
+                rotation: newRotation
+            });
+        }
     }
     
     // Create a timeline for smooth movement
     const timeline = gsap.timeline({
         repeat: -1,
-        ease: "power1.inOut"
+        ease: "power1.inOut",
+        onRepeat: function() {
+            // When the animation repeats, reposition the fish at the opposite edge
+            const lastPoint = points[points.length - 1];
+            
+            // Determine which edge to place the fish based on its last position
+            let newX, newY, newRotation;
+            
+            if (isHorizontalSwimmer) {
+                // If it was swimming horizontally, place it at the opposite horizontal edge
+                newX = lastPoint.x > 500 ? 50 : 950;
+                newY = Math.random() * 500 + 50;
+                newRotation = lastPoint.x > 500 ? 0 : 180; // Face right if at left edge, left if at right edge
+            } else {
+                // If it was swimming vertically, place it at the opposite vertical edge
+                newX = Math.random() * 900 + 50;
+                newY = lastPoint.y > 300 ? 50 : 550;
+                newRotation = lastPoint.y > 300 ? 90 : 270; // Face down if at top edge, up if at bottom edge
+            }
+            
+            // Immediately set the new position
+            gsap.set(koi, {
+                attr: { transform: `translate(${newX}, ${newY}) rotate(${newRotation}) scale(${0.8 + Math.random() * 0.4})` }
+            });
+        }
     });
     
     // Add each point to the timeline
     points.forEach(point => {
         timeline.to(koi, {
-            duration: 10 + Math.random() * 5,
+            duration: 8 + Math.random() * 4, // Slightly faster to cross the screen in reasonable time
             svgOrigin: "500 500",
             attr: { transform: `translate(${point.x}, ${point.y}) rotate(${point.rotation}) scale(${0.8 + Math.random() * 0.4})` },
             ease: "power1.inOut"
