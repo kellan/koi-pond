@@ -199,42 +199,60 @@ function animateKoi(koi) {
     // Create points that will take the fish across the screen
     const points = [];
     
+    // Add wiggle effect to the fish's body
+    addWiggleToFish(koi);
+    
+    // Create a more natural swimming path
     if (isHorizontalSwimmer) {
         // For horizontal swimmers (left to right or right to left)
         const swimDirection = Math.cos(initialRotation * Math.PI / 180) > 0 ? 1 : -1; // 1 for right, -1 for left
         
-        // Create a path that goes from one side to the other
+        // Create a path that goes from one side to the other with S-curve pattern
         const screenWidth = 1000;
-        const numPoints = 7; // More points for smoother turning
+        const numPoints = 10; // More points for smoother, more natural movement
         
+        // Create an S-curve path with occasional pauses
         for (let i = 0; i < numPoints; i++) {
             // Calculate position along the horizontal path
             const progress = (i + 1) / numPoints;
+            
+            // Add slight S-curve to the path using sine wave
+            const sinValue = Math.sin(progress * Math.PI);
             const newX = initialX + swimDirection * progress * screenWidth;
             
-            // Add some vertical variation
-            const verticalVariation = Math.random() * 200 - 100;
+            // Add some vertical variation with S-curve influence
+            const verticalVariation = sinValue * 120; // Use sine wave for smoother vertical movement
             const newY = Math.max(50, Math.min(550, initialY + verticalVariation));
             
-            // Calculate rotation based on position - turn more as approaching edge
+            // Calculate rotation based on direction of movement (fish turn toward where they're going)
             let rotationVariation;
             
             if (progress > 0.7) {
                 // Start turning as we approach the edge (last 30% of journey)
-                // Turn up or down randomly, but consistently for this fish
+                // Turn up or down based on position in pond
                 const turnDirection = (initialY > 300) ? -1 : 1; // Turn up if in bottom half, down if in top half
-                rotationVariation = turnDirection * (progress - 0.7) * 120; // Gradually increase turn angle
+                
+                // Make the turn more gradual and natural
+                const turnProgress = (progress - 0.7) / 0.3; // Normalize to 0-1 for the turning phase
+                rotationVariation = turnDirection * Math.pow(turnProgress, 2) * 90; // Use quadratic easing for more natural turn
             } else {
-                // Small random variations in the middle of the pond
-                rotationVariation = Math.random() * 20 - 10;
+                // Small variations that follow the direction of movement
+                // Fish rotate slightly toward the direction they're moving vertically
+                rotationVariation = verticalVariation > 0 ? 
+                    Math.min(15, verticalVariation / 8) : 
+                    Math.max(-15, verticalVariation / 8);
             }
             
             const newRotation = (initialRotation + rotationVariation) % 360;
             
+            // Add occasional pause points (slower segments)
+            const isPausePoint = Math.random() < 0.2 && i > 0 && i < numPoints - 1;
+            
             points.push({
                 x: Math.max(50, Math.min(950, newX)),
                 y: newY,
-                rotation: newRotation
+                rotation: newRotation,
+                duration: isPausePoint ? 8 + Math.random() * 4 : 4 + Math.random() * 2 // Longer duration for pauses
             });
         }
     } else {
@@ -243,36 +261,49 @@ function animateKoi(koi) {
         
         // Create a path that goes from top to bottom or vice versa
         const screenHeight = 600;
-        const numPoints = 7; // More points for smoother turning
+        const numPoints = 10; // More points for smoother movement
         
         for (let i = 0; i < numPoints; i++) {
             // Calculate position along the vertical path
             const progress = (i + 1) / numPoints;
+            
+            // Add slight S-curve to the path using sine wave
+            const sinValue = Math.sin(progress * Math.PI);
             const newY = initialY + swimDirection * progress * screenHeight;
             
-            // Add some horizontal variation
-            const horizontalVariation = Math.random() * 200 - 100;
+            // Add some horizontal variation with S-curve influence
+            const horizontalVariation = sinValue * 120; // Use sine wave for smoother horizontal movement
             const newX = Math.max(50, Math.min(950, initialX + horizontalVariation));
             
-            // Calculate rotation based on position - turn more as approaching edge
+            // Calculate rotation based on direction of movement
             let rotationVariation;
             
             if (progress > 0.7) {
                 // Start turning as we approach the edge (last 30% of journey)
-                // Turn left or right randomly, but consistently for this fish
+                // Turn left or right based on position in pond
                 const turnDirection = (initialX > 500) ? -1 : 1; // Turn left if in right half, right if in left half
-                rotationVariation = turnDirection * (progress - 0.7) * 120; // Gradually increase turn angle
+                
+                // Make the turn more gradual and natural
+                const turnProgress = (progress - 0.7) / 0.3; // Normalize to 0-1 for the turning phase
+                rotationVariation = turnDirection * Math.pow(turnProgress, 2) * 90; // Use quadratic easing for more natural turn
             } else {
-                // Small random variations in the middle of the pond
-                rotationVariation = Math.random() * 20 - 10;
+                // Small variations that follow the direction of movement
+                // Fish rotate slightly toward the direction they're moving horizontally
+                rotationVariation = horizontalVariation > 0 ? 
+                    Math.min(15, horizontalVariation / 8) : 
+                    Math.max(-15, horizontalVariation / 8);
             }
             
             const newRotation = (initialRotation + rotationVariation) % 360;
             
+            // Add occasional pause points (slower segments)
+            const isPausePoint = Math.random() < 0.2 && i > 0 && i < numPoints - 1;
+            
             points.push({
                 x: newX,
                 y: Math.max(50, Math.min(550, newY)),
-                rotation: newRotation
+                rotation: newRotation,
+                duration: isPausePoint ? 8 + Math.random() * 4 : 4 + Math.random() * 2 // Longer duration for pauses
             });
         }
     }
@@ -280,7 +311,6 @@ function animateKoi(koi) {
     // Create a timeline for smooth movement
     const timeline = gsap.timeline({
         repeat: -1,
-        ease: "power1.inOut",
         onRepeat: function() {
             // When the animation repeats, reposition the fish at the opposite edge
             const lastPoint = points[points.length - 1];
@@ -304,18 +334,52 @@ function animateKoi(koi) {
             gsap.set(koi, {
                 attr: { transform: `translate(${newX}, ${newY}) rotate(${newRotation}) scale(${0.8 + Math.random() * 0.4})` }
             });
+            
+            // Reset the wiggle animation
+            addWiggleToFish(koi);
         }
     });
     
-    // Add each point to the timeline
-    points.forEach(point => {
+    // Add each point to the timeline with varying durations and easing
+    points.forEach((point, index) => {
+        // Use different easing for different segments to create more natural movement
+        const ease = index % 2 === 0 ? "sine.inOut" : "power1.inOut";
+        
         timeline.to(koi, {
-            duration: 5 + Math.random() * 3, // Faster swimming speed
+            duration: point.duration,
             svgOrigin: "500 500",
             attr: { transform: `translate(${point.x}, ${point.y}) rotate(${point.rotation}) scale(${0.8 + Math.random() * 0.4})` },
-            ease: "power1.inOut"
+            ease: ease
         });
     });
+}
+
+// Add a subtle wiggle animation to simulate fish swimming motion
+function addWiggleToFish(koi) {
+    // Find the tail element (last path in the koi group)
+    const tail = koi.querySelector('path');
+    if (!tail) return;
+    
+    // Create a subtle wiggle animation for the tail
+    gsap.to(tail, {
+        attr: { d: 'M -80,0 Q -120,40 -100,0 Q -120,-40 -80,0' },
+        duration: 0.8,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+    });
+    
+    // Also add a subtle scaling effect to the body to simulate swimming motion
+    const body = koi.querySelector('ellipse');
+    if (body) {
+        gsap.to(body, {
+            attr: { ry: 38 }, // Slightly squeeze the body
+            duration: 0.8,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+        });
+    }
 }
 
 function animateLilyPad(lilyPad) {
