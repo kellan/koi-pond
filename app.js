@@ -220,17 +220,17 @@ function createSingleKoi(options) {
 }
 
 function createLilyPads(svg) {
-    const lilyPadCount = 8 + Math.floor(Math.random() * 5); // 8-12 lily pads
+    const lilyPadCount = 6 + Math.floor(Math.random() * 3); // Reduced to 6-8 lily pads for better spacing
     const colors = ['#3a7d44', '#81b29a', '#3d405b', '#4d7ea8', '#2b6777'];
     const placedLilyPads = [];
     // Fish is about 160 units long, lily pad base size should be similar
     const baseScale = 1.6; // Increased to make lily pads roughly the same diameter as fish length
     const scaleVariation = 0.2; // Even smaller variation for more consistent sizes
-    const minDistance = 220; // Increased minimum distance to prevent overlapping
+    const minDistance = 280; // Further increased minimum distance to prevent overlapping
     
     // Try to place lily pads without overlapping
     let attempts = 0;
-    const maxAttempts = 200; // Increased max attempts to find valid positions
+    const maxAttempts = 300; // Increased max attempts to find valid positions
     
     for (let i = 0; i < lilyPadCount && attempts < maxAttempts; i++) {
         const scale = baseScale + Math.random() * scaleVariation;
@@ -241,7 +241,7 @@ function createLilyPads(svg) {
         let validPosition = false;
         let x, y;
         let positionAttempts = 0;
-        const maxPositionAttempts = 30; // Increased position attempts
+        const maxPositionAttempts = 50; // Further increased position attempts
         
         while (!validPosition && positionAttempts < maxPositionAttempts) {
             x = Math.random() * 900 + 50; // Wider distribution for the new aspect ratio
@@ -255,8 +255,8 @@ function createLilyPads(svg) {
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 const combinedRadius = effectiveRadius + (50 * pad.scale); // Combined radii of both pads
                 
-                // Use the combined radii plus a buffer to ensure no overlap
-                if (distance < combinedRadius + 20) {
+                // Use the combined radii plus a larger buffer to ensure no overlap
+                if (distance < combinedRadius + 40) {
                     validPosition = false;
                     break;
                 }
@@ -296,7 +296,7 @@ function createLilyPads(svg) {
             attempts++;
             
             // If we've tried too many times, reduce the number of lily pads
-            if (attempts > maxAttempts * 0.8 && lilyPadCount > 8) {
+            if (attempts > maxAttempts * 0.5 && lilyPadCount > 5) {
                 lilyPadCount--;
                 console.log("Reducing lily pad count to avoid overcrowding:", lilyPadCount);
             }
