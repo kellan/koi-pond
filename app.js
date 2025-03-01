@@ -88,25 +88,65 @@ function createSingleKoi(options) {
 function createLilyPads(svg) {
     const lilyPadCount = 8 + Math.floor(Math.random() * 5); // 8-12 lily pads
     const colors = ['#3a7d44', '#81b29a', '#3d405b', '#4d7ea8', '#2b6777'];
+    const placedLilyPads = [];
+    const baseScale = 0.8;
+    const scaleVariation = 0.3; // Smaller variation for more consistent sizes
+    const minDistance = 120; // Minimum distance between lily pad centers to prevent overlap
     
-    for (let i = 0; i < lilyPadCount; i++) {
-        const lilyPad = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        lilyPad.classList.add('lily-pad');
-        
-        const x = Math.random() * 900 + 50;
-        const y = Math.random() * 900 + 50;
-        const scale = 0.5 + Math.random() * 1.5;
+    // Try to place lily pads without overlapping
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    for (let i = 0; i < lilyPadCount && attempts < maxAttempts; i++) {
+        const scale = baseScale + Math.random() * scaleVariation;
         const rotation = Math.random() * 360;
         
-        lilyPad.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}) scale(${scale})`);
+        // Try to find a non-overlapping position
+        let validPosition = false;
+        let x, y;
+        let positionAttempts = 0;
         
-        // Create the lily pad shape (circle with a cut)
-        const pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pad.setAttribute('d', 'M 0,0 A 50,50 0 1 1 0,0.1 L 0,0 z');
-        pad.setAttribute('fill', colors[Math.floor(Math.random() * colors.length)]);
-        lilyPad.appendChild(pad);
+        while (!validPosition && positionAttempts < 20) {
+            x = Math.random() * 800 + 100;
+            y = Math.random() * 800 + 100;
+            
+            // Check if this position overlaps with any existing lily pad
+            validPosition = true;
+            for (const pad of placedLilyPads) {
+                const dx = x - pad.x;
+                const dy = y - pad.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < minDistance) {
+                    validPosition = false;
+                    break;
+                }
+            }
+            
+            positionAttempts++;
+        }
         
-        svg.appendChild(lilyPad);
+        if (validPosition) {
+            const lilyPad = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            lilyPad.classList.add('lily-pad');
+            
+            lilyPad.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}) scale(${scale})`);
+            
+            // Create the lily pad shape (circle with a cut)
+            const pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            pad.setAttribute('d', 'M 0,0 A 50,50 0 1 1 0,0.1 L 0,0 z');
+            pad.setAttribute('fill', colors[Math.floor(Math.random() * colors.length)]);
+            lilyPad.appendChild(pad);
+            
+            svg.appendChild(lilyPad);
+            
+            // Remember this lily pad's position
+            placedLilyPads.push({ x, y, scale });
+        } else {
+            // If we couldn't place this lily pad, try again
+            i--;
+            attempts++;
+        }
     }
 }
 
@@ -173,10 +213,9 @@ function animateKoi(koi) {
 }
 
 function animateLilyPad(lilyPad) {
-    // Create a gentle swaying motion
-    const originalTransform = lilyPad.getAttribute('transform');
-    const rotationAmount = 5 + Math.random() * 10;
-    const duration = 3 + Math.random() * 2;
+    // Create a gentler swaying motion with smaller range and slower speed
+    const rotationAmount = 2 + Math.random() * 3; // Reduced from 5-15 to 2-5 degrees
+    const duration = 5 + Math.random() * 3; // Increased from 3-5 to 5-8 seconds
     
     gsap.to(lilyPad, {
         duration: duration,
