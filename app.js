@@ -121,18 +121,85 @@ function createSingleKoi(options) {
     tail.setAttribute('fill', 'white');
     koiGroup.appendChild(tail);
     
-    // Add orange spots
-    for (let i = 0; i < options.spotCount; i++) {
-        const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        const spotX = Math.random() * 120 - 60;
-        const spotY = Math.random() * 60 - 30;
-        const spotRadius = 5 + Math.random() * 10;
+    // Create a clipping path for the spots to stay within the fish body
+    const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+    const clipId = `fish-clip-${Math.floor(Math.random() * 10000)}`; // Unique ID
+    clipPath.setAttribute('id', clipId);
+    
+    // Add the body shape to the clip path
+    const clipBody = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+    clipBody.setAttribute('cx', '0');
+    clipBody.setAttribute('cy', '0');
+    clipBody.setAttribute('rx', '80');
+    clipBody.setAttribute('ry', '40');
+    clipPath.appendChild(clipBody);
+    
+    // Add the clip path to the SVG
+    koiGroup.appendChild(clipPath);
+    
+    // Create a group for the spots that will use the clip path
+    const spotsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    spotsGroup.setAttribute('clip-path', `url(#${clipId})`);
+    koiGroup.appendChild(spotsGroup);
+    
+    // Track placed spots to avoid overlap
+    const placedSpots = [];
+    const bodyRx = 80;
+    const bodyRy = 40;
+    
+    // Add spots (orange and black)
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    for (let i = 0; i < options.spotCount && attempts < maxAttempts; i++) {
+        // Generate a spot within the ellipse bounds
+        const spotRadius = 5 + Math.random() * 8; // Slightly smaller max radius
         
-        spot.setAttribute('cx', spotX);
-        spot.setAttribute('cy', spotY);
-        spot.setAttribute('r', spotRadius);
-        spot.setAttribute('fill', i % 3 === 0 ? 'black' : 'orange');
-        koiGroup.appendChild(spot);
+        // Try to find a non-overlapping position
+        let validPosition = false;
+        let spotX, spotY;
+        let positionAttempts = 0;
+        
+        while (!validPosition && positionAttempts < 20) {
+            // Generate random position within the ellipse
+            // Use parametric equation with random angle and radius factor
+            const angle = Math.random() * Math.PI * 2;
+            const radiusFactor = Math.random() * 0.8; // Stay within 80% of the ellipse to avoid edge clipping
+            
+            spotX = Math.cos(angle) * (bodyRx - spotRadius) * radiusFactor;
+            spotY = Math.sin(angle) * (bodyRy - spotRadius) * radiusFactor;
+            
+            // Check if this position overlaps with any existing spot
+            validPosition = true;
+            for (const existingSpot of placedSpots) {
+                const dx = spotX - existingSpot.x;
+                const dy = spotY - existingSpot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < spotRadius + existingSpot.radius + 2) { // Add 2px buffer
+                    validPosition = false;
+                    break;
+                }
+            }
+            
+            positionAttempts++;
+        }
+        
+        if (validPosition) {
+            const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            spot.setAttribute('cx', spotX);
+            spot.setAttribute('cy', spotY);
+            spot.setAttribute('r', spotRadius);
+            spot.setAttribute('fill', i % 3 === 0 ? 'black' : 'orange');
+            spotsGroup.appendChild(spot);
+            
+            // Remember this spot's position and radius
+            placedSpots.push({ x: spotX, y: spotY, radius: spotRadius });
+        } else {
+            // If we couldn't place this spot, try again
+            i--;
+            attempts++;
+        }
     }
     
     return koiGroup;
