@@ -94,22 +94,24 @@ function createLilyPads(svg) {
     // Fish is about 160 units long, lily pad base size should be similar
     const baseScale = 1.6; // Increased to make lily pads roughly the same diameter as fish length
     const scaleVariation = 0.2; // Even smaller variation for more consistent sizes
-    const minDistance = 180; // Increased minimum distance to account for larger lily pads
+    const minDistance = 220; // Increased minimum distance to prevent overlapping
     
     // Try to place lily pads without overlapping
     let attempts = 0;
-    const maxAttempts = 100;
+    const maxAttempts = 200; // Increased max attempts to find valid positions
     
     for (let i = 0; i < lilyPadCount && attempts < maxAttempts; i++) {
         const scale = baseScale + Math.random() * scaleVariation;
+        const effectiveRadius = 50 * scale; // Calculate the actual radius after scaling
         const rotation = Math.random() * 360;
         
         // Try to find a non-overlapping position
         let validPosition = false;
         let x, y;
         let positionAttempts = 0;
+        const maxPositionAttempts = 30; // Increased position attempts
         
-        while (!validPosition && positionAttempts < 20) {
+        while (!validPosition && positionAttempts < maxPositionAttempts) {
             x = Math.random() * 900 + 50; // Wider distribution for the new aspect ratio
             y = Math.random() * 500 + 50; // Adjusted for the new aspect ratio
             
@@ -119,10 +121,20 @@ function createLilyPads(svg) {
                 const dx = x - pad.x;
                 const dy = y - pad.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
+                const combinedRadius = effectiveRadius + (50 * pad.scale); // Combined radii of both pads
                 
-                if (distance < minDistance) {
+                // Use the combined radii plus a buffer to ensure no overlap
+                if (distance < combinedRadius + 20) {
                     validPosition = false;
                     break;
+                }
+            }
+            
+            // Also check if too close to edges
+            if (validPosition) {
+                if (x - effectiveRadius < 0 || x + effectiveRadius > 1000 || 
+                    y - effectiveRadius < 0 || y + effectiveRadius > 600) {
+                    validPosition = false;
                 }
             }
             
@@ -150,6 +162,12 @@ function createLilyPads(svg) {
             // If we couldn't place this lily pad, try again
             i--;
             attempts++;
+            
+            // If we've tried too many times, reduce the number of lily pads
+            if (attempts > maxAttempts * 0.8 && lilyPadCount > 8) {
+                lilyPadCount--;
+                console.log("Reducing lily pad count to avoid overcrowding:", lilyPadCount);
+            }
         }
     }
 }
