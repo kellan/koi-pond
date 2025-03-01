@@ -93,7 +93,6 @@ function createKoiFish(svg) {
         scale: 1,
         spotCount: 3
     });
-    svg.appendChild(koi1);
     
     // Second fish - starts at bottom edge, swimming up (with slight angle)
     const koi2 = createSingleKoi({
@@ -103,7 +102,16 @@ function createKoiFish(svg) {
         scale: 0.8,
         spotCount: 4
     });
-    svg.appendChild(koi2);
+    
+    // Insert the koi fish at the beginning of the SVG so they appear under lily pads
+    // Use insertBefore with the first child to ensure they're at the bottom of the stack
+    if (svg.firstChild) {
+        svg.insertBefore(koi1, svg.firstChild);
+        svg.insertBefore(koi2, svg.firstChild);
+    } else {
+        svg.appendChild(koi1);
+        svg.appendChild(koi2);
+    }
 }
 
 function createSingleKoi(options) {
