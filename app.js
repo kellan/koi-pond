@@ -89,9 +89,10 @@ function createLilyPads(svg) {
     const lilyPadCount = 8 + Math.floor(Math.random() * 5); // 8-12 lily pads
     const colors = ['#3a7d44', '#81b29a', '#3d405b', '#4d7ea8', '#2b6777'];
     const placedLilyPads = [];
-    const baseScale = 0.8;
-    const scaleVariation = 0.3; // Smaller variation for more consistent sizes
-    const minDistance = 120; // Minimum distance between lily pad centers to prevent overlap
+    // Fish is about 160 units long, lily pad base size should be similar
+    const baseScale = 1.6; // Increased to make lily pads roughly the same diameter as fish length
+    const scaleVariation = 0.2; // Even smaller variation for more consistent sizes
+    const minDistance = 180; // Increased minimum distance to account for larger lily pads
     
     // Try to place lily pads without overlapping
     let attempts = 0;
@@ -133,6 +134,7 @@ function createLilyPads(svg) {
             lilyPad.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}) scale(${scale})`);
             
             // Create the lily pad shape (circle with a cut)
+            // Using radius of 50 with scale of 1.6 gives diameter of ~160 units, matching fish length
             const pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             pad.setAttribute('d', 'M 0,0 A 50,50 0 1 1 0,0.1 L 0,0 z');
             pad.setAttribute('fill', colors[Math.floor(Math.random() * colors.length)]);
