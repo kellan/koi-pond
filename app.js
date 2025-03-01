@@ -12,8 +12,8 @@ function initKoiPond() {
     svg.setAttribute('id', 'pond');
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '100%');
-    svg.setAttribute('viewBox', '0 0 1000 1000');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.setAttribute('viewBox', '0 0 1000 600'); // Changed to a wider aspect ratio
+    svg.setAttribute('preserveAspectRatio', 'xMinYMin slice'); // Changed to slice mode to ensure full coverage
     container.appendChild(svg);
     
     // Create koi fish
@@ -108,8 +108,8 @@ function createLilyPads(svg) {
         let positionAttempts = 0;
         
         while (!validPosition && positionAttempts < 20) {
-            x = Math.random() * 800 + 100;
-            y = Math.random() * 800 + 100;
+            x = Math.random() * 900 + 50; // Wider distribution for the new aspect ratio
+            y = Math.random() * 500 + 50; // Adjusted for the new aspect ratio
             
             // Check if this position overlaps with any existing lily pad
             validPosition = true;
@@ -184,8 +184,8 @@ function animateKoi(koi) {
         const newY = initialY + Math.sin(currentRotationRad) * distanceToMove;
         
         // Ensure the fish stays within bounds
-        const boundedX = Math.max(100, Math.min(900, newX));
-        const boundedY = Math.max(100, Math.min(900, newY));
+        const boundedX = Math.max(50, Math.min(950, newX));
+        const boundedY = Math.max(50, Math.min(550, newY));
         
         // New rotation should be in the direction of movement (opposite of tail)
         const newRotation = (initialRotation + 180 + Math.random() * 60 - 30) % 360;
