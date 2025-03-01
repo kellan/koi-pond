@@ -27,21 +27,21 @@ function initKoiPond() {
 }
 
 function createKoiFish(svg) {
-    // Create first koi fish - tail points at 45 degrees, so fish will swim at 225 degrees
+    // Create first koi fish - rotation is the direction the fish is facing/swimming
     const koi1 = createSingleKoi({
         x: 300,
         y: 400,
-        rotation: 45,  // Tail direction
+        rotation: 45,  // Head direction (fish swims this way)
         scale: 1,
         spotCount: 3
     });
     svg.appendChild(koi1);
     
-    // Create second koi fish with variations - tail points at -30 degrees, so fish will swim at 150 degrees
+    // Create second koi fish with variations
     const koi2 = createSingleKoi({
         x: 600,
         y: 700,
-        rotation: -30,  // Tail direction
+        rotation: 150,  // Head direction (fish swims this way)
         scale: 0.8,
         spotCount: 4
     });
@@ -62,9 +62,9 @@ function createSingleKoi(options) {
     body.setAttribute('fill', 'white');
     koiGroup.appendChild(body);
     
-    // Create tail
+    // Create tail (at the back of the fish)
     const tail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    tail.setAttribute('d', 'M 80,0 Q 120,40 100,0 Q 120,-40 80,0');
+    tail.setAttribute('d', 'M -80,0 Q -120,40 -100,0 Q -120,-40 -80,0');
     tail.setAttribute('fill', 'white');
     koiGroup.appendChild(tail);
     
@@ -173,12 +173,15 @@ function animateKoi(koi) {
     const initialY = parseFloat(transform.split(',')[1].split(')')[0]);
     const initialRotation = parseFloat(transform.split('rotate(')[1].split(')')[0]);
     
-    // Get random points for the koi to swim to, ensuring they swim in the opposite direction of their tail
+    // Get random points for the koi to swim to, ensuring they swim in the direction they're facing
     const points = [];
     for (let i = 0; i < 5; i++) {
-        // Calculate a new position that's in the opposite direction of the tail
-        const currentRotationRad = (initialRotation + i * 72) * Math.PI / 180;
-        // Move in the opposite direction of where the tail points
+        // Calculate a new position in the general direction the fish is facing
+        // with some random variation
+        const variationAngle = Math.random() * 60 - 30; // +/- 30 degrees variation
+        const currentRotationRad = (initialRotation + variationAngle) * Math.PI / 180;
+        
+        // Move in the direction the fish is facing
         const distanceToMove = 300 + Math.random() * 500;
         const newX = initialX + Math.cos(currentRotationRad) * distanceToMove;
         const newY = initialY + Math.sin(currentRotationRad) * distanceToMove;
@@ -187,8 +190,8 @@ function animateKoi(koi) {
         const boundedX = Math.max(50, Math.min(950, newX));
         const boundedY = Math.max(50, Math.min(550, newY));
         
-        // New rotation should be in the direction of movement (opposite of tail)
-        const newRotation = (initialRotation + 180 + Math.random() * 60 - 30) % 360;
+        // New rotation should be in the direction of movement (where the fish is heading)
+        const newRotation = (initialRotation + variationAngle) % 360;
         
         points.push({
             x: boundedX,
