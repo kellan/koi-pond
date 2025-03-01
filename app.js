@@ -187,7 +187,7 @@ function animateKoi(koi) {
         
         // Create a path that goes from one side to the other
         const screenWidth = 1000;
-        const numPoints = 5;
+        const numPoints = 7; // More points for smoother turning
         
         for (let i = 0; i < numPoints; i++) {
             // Calculate position along the horizontal path
@@ -198,8 +198,19 @@ function animateKoi(koi) {
             const verticalVariation = Math.random() * 200 - 100;
             const newY = Math.max(50, Math.min(550, initialY + verticalVariation));
             
-            // Small rotation variations
-            const rotationVariation = Math.random() * 20 - 10;
+            // Calculate rotation based on position - turn more as approaching edge
+            let rotationVariation;
+            
+            if (progress > 0.7) {
+                // Start turning as we approach the edge (last 30% of journey)
+                // Turn up or down randomly, but consistently for this fish
+                const turnDirection = (initialY > 300) ? -1 : 1; // Turn up if in bottom half, down if in top half
+                rotationVariation = turnDirection * (progress - 0.7) * 120; // Gradually increase turn angle
+            } else {
+                // Small random variations in the middle of the pond
+                rotationVariation = Math.random() * 20 - 10;
+            }
+            
             const newRotation = (initialRotation + rotationVariation) % 360;
             
             points.push({
@@ -214,7 +225,7 @@ function animateKoi(koi) {
         
         // Create a path that goes from top to bottom or vice versa
         const screenHeight = 600;
-        const numPoints = 5;
+        const numPoints = 7; // More points for smoother turning
         
         for (let i = 0; i < numPoints; i++) {
             // Calculate position along the vertical path
@@ -225,8 +236,19 @@ function animateKoi(koi) {
             const horizontalVariation = Math.random() * 200 - 100;
             const newX = Math.max(50, Math.min(950, initialX + horizontalVariation));
             
-            // Small rotation variations
-            const rotationVariation = Math.random() * 20 - 10;
+            // Calculate rotation based on position - turn more as approaching edge
+            let rotationVariation;
+            
+            if (progress > 0.7) {
+                // Start turning as we approach the edge (last 30% of journey)
+                // Turn left or right randomly, but consistently for this fish
+                const turnDirection = (initialX > 500) ? -1 : 1; // Turn left if in right half, right if in left half
+                rotationVariation = turnDirection * (progress - 0.7) * 120; // Gradually increase turn angle
+            } else {
+                // Small random variations in the middle of the pond
+                rotationVariation = Math.random() * 20 - 10;
+            }
+            
             const newRotation = (initialRotation + rotationVariation) % 360;
             
             points.push({
@@ -270,7 +292,7 @@ function animateKoi(koi) {
     // Add each point to the timeline
     points.forEach(point => {
         timeline.to(koi, {
-            duration: 8 + Math.random() * 4, // Slightly faster to cross the screen in reasonable time
+            duration: 5 + Math.random() * 3, // Faster swimming speed
             svgOrigin: "500 500",
             attr: { transform: `translate(${point.x}, ${point.y}) rotate(${point.rotation}) scale(${0.8 + Math.random() * 0.4})` },
             ease: "power1.inOut"
