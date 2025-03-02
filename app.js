@@ -29,7 +29,7 @@ function createKoiAtClick(event) {
     
     // Create a new koi at the click position with random attributes
     const rotation = Math.random() * 360;
-    const scale = 0.7 + Math.random() * 0.5;
+    const scale = 0.4 + Math.random() * 0.3; // Reduced from 0.7-1.2 to 0.4-0.7
     const spotCount = 2 + Math.floor(Math.random() * 4);
     
     const newKoi = createSingleKoi({
@@ -83,34 +83,66 @@ function initKoiPond() {
 }
 
 function createKoiFish(svg) {
-    // Create fish at different edges with directions that will take them across the screen
+    // Create more fish at different edges with directions that will take them across the screen
+    const fishCount = 5; // Increased from 2 to 5 initial fish
+    const koiFish = [];
     
-    // First fish - starts at left edge, swimming right (with slight angle)
-    const koi1 = createSingleKoi({
+    // Create fish at various positions
+    // First fish - starts at left edge, swimming right
+    koiFish.push(createSingleKoi({
         x: 50,
         y: 200,
         rotation: 0,  // Swimming right
-        scale: 1,
+        scale: 0.7,   // Smaller scale
         spotCount: 3
-    });
+    }));
     
-    // Second fish - starts at bottom edge, swimming up (with slight angle)
-    const koi2 = createSingleKoi({
+    // Second fish - starts at bottom edge, swimming up
+    koiFish.push(createSingleKoi({
         x: 700,
         y: 550,
         rotation: 270,  // Swimming up
-        scale: 0.8,
+        scale: 0.6,     // Smaller scale
         spotCount: 4
-    });
+    }));
+    
+    // Third fish - starts at top edge, swimming down
+    koiFish.push(createSingleKoi({
+        x: 300,
+        y: 50,
+        rotation: 90,  // Swimming down
+        scale: 0.5,    // Smaller scale
+        spotCount: 2
+    }));
+    
+    // Fourth fish - starts at right edge, swimming left
+    koiFish.push(createSingleKoi({
+        x: 950,
+        y: 350,
+        rotation: 180,  // Swimming left
+        scale: 0.65,    // Smaller scale
+        spotCount: 5
+    }));
+    
+    // Fifth fish - starts in the middle, swimming diagonally
+    koiFish.push(createSingleKoi({
+        x: 500,
+        y: 300,
+        rotation: 45,  // Swimming diagonally
+        scale: 0.55,   // Smaller scale
+        spotCount: 3
+    }));
     
     // Insert the koi fish at the beginning of the SVG so they appear under lily pads
     // Use insertBefore with the first child to ensure they're at the bottom of the stack
     if (svg.firstChild) {
-        svg.insertBefore(koi1, svg.firstChild);
-        svg.insertBefore(koi2, svg.firstChild);
+        koiFish.forEach(koi => {
+            svg.insertBefore(koi, svg.firstChild);
+        });
     } else {
-        svg.appendChild(koi1);
-        svg.appendChild(koi2);
+        koiFish.forEach(koi => {
+            svg.appendChild(koi);
+        });
     }
 }
 
@@ -120,18 +152,18 @@ function createSingleKoi(options) {
     koiGroup.setAttribute('transform', `translate(${options.x}, ${options.y}) rotate(${options.rotation}) scale(${options.scale})`);
     koiGroup.setAttribute('opacity', '1'); // Ensure full opacity for new fish
     
-    // Create koi body (white ellipse)
+    // Create koi body (white ellipse) - scaled down
     const body = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
     body.setAttribute('cx', '0');
     body.setAttribute('cy', '0');
-    body.setAttribute('rx', '80');
-    body.setAttribute('ry', '40');
+    body.setAttribute('rx', '50'); // Reduced from 80
+    body.setAttribute('ry', '25'); // Reduced from 40
     body.setAttribute('fill', 'white');
     koiGroup.appendChild(body);
     
-    // Create tail (at the back of the fish)
+    // Create tail (at the back of the fish) - scaled down
     const tail = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    tail.setAttribute('d', 'M -80,0 Q -120,40 -100,0 Q -120,-40 -80,0');
+    tail.setAttribute('d', 'M -50,0 Q -75,25 -65,0 Q -75,-25 -50,0'); // Scaled down from original
     tail.setAttribute('fill', 'white');
     koiGroup.appendChild(tail);
     
@@ -140,12 +172,12 @@ function createSingleKoi(options) {
     const clipId = `fish-clip-${Math.floor(Math.random() * 10000)}`; // Unique ID
     clipPath.setAttribute('id', clipId);
     
-    // Add the body shape to the clip path
+    // Add the body shape to the clip path - scaled down
     const clipBody = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
     clipBody.setAttribute('cx', '0');
     clipBody.setAttribute('cy', '0');
-    clipBody.setAttribute('rx', '80');
-    clipBody.setAttribute('ry', '40');
+    clipBody.setAttribute('rx', '50'); // Reduced from 80
+    clipBody.setAttribute('ry', '25'); // Reduced from 40
     clipPath.appendChild(clipBody);
     
     // Add the clip path to the SVG
@@ -158,8 +190,8 @@ function createSingleKoi(options) {
     
     // Track placed spots to avoid overlap
     const placedSpots = [];
-    const bodyRx = 80;
-    const bodyRy = 40;
+    const bodyRx = 50; // Reduced from 80
+    const bodyRy = 25; // Reduced from 40
     
     // Add spots (orange and black)
     let attempts = 0;
@@ -167,7 +199,7 @@ function createSingleKoi(options) {
     
     for (let i = 0; i < options.spotCount && attempts < maxAttempts; i++) {
         // Generate a spot within the ellipse bounds
-        const spotRadius = 5 + Math.random() * 8; // Slightly smaller max radius
+        const spotRadius = 3 + Math.random() * 5; // Reduced from 5-13 to 3-8
         
         // Try to find a non-overlapping position
         let validPosition = false;
@@ -220,7 +252,7 @@ function createSingleKoi(options) {
 }
 
 function createLilyPads(svg) {
-    const lilyPadCount = 6 + Math.floor(Math.random() * 3); // Reduced to 6-8 lily pads for better spacing
+    const lilyPadCount = 15 + Math.floor(Math.random() * 10); // Increased to 15-25 lily pads
     // Colors from the image - vibrant circles in various colors
     const colors = [
         '#f94144', // bright red
@@ -244,10 +276,10 @@ function createLilyPads(svg) {
         '#6a4c93'  // purple
     ];
     const placedLilyPads = [];
-    // Fish is about 160 units long, lily pad base size should be similar
-    const baseScale = 1.6; // Increased to make lily pads roughly the same diameter as fish length
-    const scaleVariation = 0.2; // Even smaller variation for more consistent sizes
-    const minDistance = 280; // Further increased minimum distance to prevent overlapping
+    // Fish is now about 100 units long, lily pads should be smaller
+    const baseScale = 0.8; // Reduced from 1.6 to make lily pads smaller
+    const scaleVariation = 0.3; // Slightly more variation for visual interest
+    const minDistance = 120; // Reduced minimum distance to allow more lily pads
     
     // Try to place lily pads without overlapping
     let attempts = 0;
@@ -526,9 +558,9 @@ function addWiggleToFish(koi) {
     const tail = koi.querySelector('path');
     if (!tail) return;
     
-    // Create a subtle wiggle animation for the tail
+    // Create a subtle wiggle animation for the tail - scaled down
     gsap.to(tail, {
-        attr: { d: 'M -80,0 Q -120,40 -100,0 Q -120,-40 -80,0' },
+        attr: { d: 'M -50,0 Q -75,25 -65,0 Q -75,-25 -50,0' },
         duration: 0.8,
         repeat: -1,
         yoyo: true,
@@ -539,7 +571,7 @@ function addWiggleToFish(koi) {
     const body = koi.querySelector('ellipse');
     if (body) {
         gsap.to(body, {
-            attr: { ry: 38 }, // Slightly squeeze the body
+            attr: { ry: 23 }, // Slightly squeeze the body (scaled down from 38)
             duration: 0.8,
             repeat: -1,
             yoyo: true,
