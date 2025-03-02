@@ -492,7 +492,8 @@ function createSingleKoi(options) {
 }
 
 function createLilyPads(svg) {
-    const lilyPadCount = 15 + Math.floor(Math.random() * 10); // Increased to 15-25 lily pads
+    // Define the target number of lily pads (we may create fewer if placement becomes difficult)
+    const targetLilyPadCount = 15 + Math.floor(Math.random() * 10); // Target 15-25 lily pads
     // Colors from the image - vibrant circles in various colors
     const colors = [
         //'#f94144', // bright red
@@ -525,7 +526,7 @@ function createLilyPads(svg) {
     let attempts = 0;
     const maxAttempts = 300; // Increased max attempts to find valid positions
 
-    for (let i = 0; i < lilyPadCount && attempts < maxAttempts; i++) {
+    for (let i = 0; i < targetLilyPadCount && attempts < maxAttempts; i++) {
         const scale = baseScale + Math.random() * scaleVariation;
         const effectiveRadius = 50 * scale; // Calculate the actual radius after scaling
         const rotation = Math.random() * 360;
@@ -609,8 +610,10 @@ function createLilyPads(svg) {
 
             // If we've tried too many times, reduce the number of lily pads
             if (attempts > maxAttempts * 0.5 && lilyPadCount > 5) {
-                lilyPadCount--;
-                console.log("Reducing lily pad count to avoid overcrowding:", lilyPadCount);
+                // Can't modify lilyPadCount directly as it's a const
+                // Instead, we'll break out of the loop early
+                console.log("Too many placement attempts, stopping lily pad creation at", i, "out of", lilyPadCount);
+                break;
             }
         }
     }
