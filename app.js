@@ -30,7 +30,7 @@ function createKoiAtClick(event) {
     // Create a new koi at the click position with random attributes
     const rotation = Math.random() * 360;
     const scale = 0.4 + Math.random() * 0.3; // Reduced from 0.7-1.2 to 0.4-0.7
-    const patchCount = 1 + Math.floor(Math.random() * 3); // 1-3 kohaku patches
+    const patchCount = 2 + Math.floor(Math.random() * 3); // 2-4 kohaku patches
     
     const newKoi = createSingleKoi({
         x: svgX,
@@ -94,7 +94,7 @@ function createKoiFish(svg) {
         y: 200,
         rotation: 0,  // Swimming right
         scale: 0.7,   // Smaller scale
-        spotCount: 2  // 2 kohaku patches
+        spotCount: 3  // 3 kohaku patches
     }));
     
     // Second fish - starts at bottom edge, swimming up
@@ -103,7 +103,7 @@ function createKoiFish(svg) {
         y: 550,
         rotation: 270,  // Swimming up
         scale: 0.6,     // Smaller scale
-        spotCount: 1    // 1 kohaku patch
+        spotCount: 2    // 2 kohaku patches
     }));
     
     // Third fish - starts at top edge, swimming down
@@ -112,7 +112,7 @@ function createKoiFish(svg) {
         y: 50,
         rotation: 90,  // Swimming down
         scale: 0.5,    // Smaller scale
-        spotCount: 3   // 3 kohaku patches
+        spotCount: 4   // 4 kohaku patches
     }));
     
     // Fourth fish - starts at right edge, swimming left
@@ -121,7 +121,7 @@ function createKoiFish(svg) {
         y: 350,
         rotation: 180,  // Swimming left
         scale: 0.65,    // Smaller scale
-        spotCount: 2    // 2 kohaku patches
+        spotCount: 3    // 3 kohaku patches
     }));
     
     // Fifth fish - starts in the middle, swimming diagonally
@@ -130,7 +130,7 @@ function createKoiFish(svg) {
         y: 300,
         rotation: 45,  // Swimming diagonally
         scale: 0.55,   // Smaller scale
-        spotCount: 1   // 1 kohaku patch
+        spotCount: 2   // 2 kohaku patches
     }));
     
     // Insert the koi fish at the beginning of the SVG so they appear under lily pads
@@ -193,17 +193,36 @@ function createSingleKoi(options) {
     const bodyRx = 50; // Reduced from 80
     const bodyRy = 25; // Reduced from 40
     
-    // Add kohaku pattern (red patches on white)
+    // Add kohaku pattern (red patches on white) inspired by kohaku-koi-h.jpg
     let attempts = 0;
     const maxAttempts = 50;
     
-    // Create 1-3 larger red patches instead of many small spots
-    const patchCount = 1 + Math.floor(Math.random() * 3); // 1-3 patches
+    // Create 2-4 smaller patches in a pattern similar to kohaku koi
+    const patchCount = 2 + Math.floor(Math.random() * 3); // 2-4 patches
     
+    // Define regions for patch placement based on kohaku pattern
+    // Avoid the first 10% of the fish (head area)
+    const regions = [
+        { xMin: bodyRx * 0.1, xMax: bodyRx * 0.3, yFactor: 0.7 }, // Behind head, top
+        { xMin: bodyRx * 0.3, xMax: bodyRx * 0.6, yFactor: 0.8 }, // Middle body, top
+        { xMin: -bodyRx * 0.2, xMax: bodyRx * 0.1, yFactor: 0.6 }, // Tail area, top
+        { xMin: bodyRx * 0.2, xMax: bodyRx * 0.5, yFactor: -0.7 }  // Middle body, bottom (less common)
+    ];
+    
+    // Maximum patch size is 10% of fish body
+    const maxPatchSize = Math.min(bodyRx, bodyRy) * 0.3; // 10% of body dimension
+    
+    // Place patches in different regions
     for (let i = 0; i < patchCount && attempts < maxAttempts; i++) {
-        // Generate a patch within the ellipse bounds
-        // Kohaku patches are larger than spots
-        const patchRadius = 10 + Math.random() * 15; 
+        // Select a region, favoring top regions
+        const regionIndex = Math.random() < 0.7 ? 
+            Math.floor(Math.random() * 3) : // 70% chance for top regions (0-2)
+            3; // 30% chance for bottom region (3)
+        
+        const region = regions[regionIndex];
+        
+        // Generate a patch within the selected region
+        const patchRadius = maxPatchSize * (0.5 + Math.random() * 0.5); // 50-100% of max size
         
         // Try to find a non-overlapping position
         let validPosition = false;
@@ -211,13 +230,14 @@ function createSingleKoi(options) {
         let positionAttempts = 0;
         
         while (!validPosition && positionAttempts < 20) {
-            // Generate random position within the ellipse
-            // Kohaku patterns often appear on the top of the fish
-            const angle = (Math.random() * Math.PI) - (Math.PI/2); // Favor top half
-            const radiusFactor = 0.2 + Math.random() * 0.6; // Stay within reasonable bounds
+            // Generate position within the selected region
+            patchX = region.xMin + Math.random() * (region.xMax - region.xMin);
             
-            patchX = Math.cos(angle) * (bodyRx - patchRadius) * radiusFactor;
-            patchY = Math.sin(angle) * (bodyRy - patchRadius) * radiusFactor;
+            // Y position based on region's yFactor (positive for top, negative for bottom)
+            const yRange = bodyRy * 0.6; // Limit vertical range
+            patchY = region.yFactor > 0 ? 
+                -Math.random() * yRange * region.yFactor : // Top regions
+                Math.random() * yRange * Math.abs(region.yFactor); // Bottom region
             
             // Check if this position overlaps with any existing patch
             validPosition = true;
@@ -226,7 +246,7 @@ function createSingleKoi(options) {
                 const dy = patchY - existingPatch.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                if (distance < patchRadius + existingPatch.radius + 5) { // Add buffer
+                if (distance < patchRadius + existingPatch.radius + 2) { // Smaller buffer
                     validPosition = false;
                     break;
                 }
@@ -236,28 +256,32 @@ function createSingleKoi(options) {
         }
         
         if (validPosition) {
-            // Create an irregular, organic patch shape instead of a perfect circle
-            // This better represents the natural kohaku pattern
+            // Create an irregular, organic patch shape inspired by kohaku pattern
             const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             
-            // Create an organic blob shape for the red patch
+            // Create an organic shape for the red patch
             let pathData = 'M ';
-            const points = 8 + Math.floor(Math.random() * 5); // 8-12 points for organic shape
+            const points = 6 + Math.floor(Math.random() * 4); // 6-9 points for organic shape
             
             for (let j = 0; j <= points; j++) {
                 const angle = (j / points) * Math.PI * 2;
-                // Vary the radius to create irregular shapes
-                const radius = patchRadius * (0.8 + Math.random() * 0.4);
-                const x = patchX + Math.cos(angle) * radius;
-                const y = patchY + Math.sin(angle) * radius;
+                
+                // Create more natural, flowing shapes like in kohaku pattern
+                // More elongated in the direction of the fish body
+                const xStretch = 1.2 + Math.random() * 0.4; // Stretch horizontally
+                const yStretch = 0.8 + Math.random() * 0.3; // Less vertical stretch
+                
+                const radius = patchRadius * (0.8 + Math.random() * 0.3);
+                const x = patchX + Math.cos(angle) * radius * xStretch;
+                const y = patchY + Math.sin(angle) * radius * yStretch;
                 
                 if (j === 0) {
                     pathData += `${x},${y} `;
                 } else {
                     // Use quadratic curves for smoother, organic shapes
                     const prevAngle = ((j-1) / points) * Math.PI * 2;
-                    const cpX = patchX + Math.cos((prevAngle + angle) / 2) * radius * 1.2;
-                    const cpY = patchY + Math.sin((prevAngle + angle) / 2) * radius * 1.2;
+                    const cpX = patchX + Math.cos((prevAngle + angle) / 2) * radius * 1.1 * xStretch;
+                    const cpY = patchY + Math.sin((prevAngle + angle) / 2) * radius * 1.1 * yStretch;
                     
                     pathData += `Q ${cpX},${cpY} ${x},${y} `;
                 }
@@ -265,7 +289,7 @@ function createSingleKoi(options) {
             
             pathData += 'Z'; // Close the path
             patch.setAttribute('d', pathData);
-            patch.setAttribute('fill', '#e63946'); // Bright red for kohaku pattern
+            patch.setAttribute('fill', '#ff4d4d'); // Bright orange-red for kohaku pattern
             spotsGroup.appendChild(patch);
             
             // Remember this patch's position and radius
@@ -628,11 +652,11 @@ function addWiggleToFish(koi) {
     }
     
     // Add subtle movement to the kohaku patches
-    const patches = koi.querySelectorAll('.spots-group path');
+    const patches = koi.querySelectorAll('g[clip-path] path');
     patches.forEach((patch, index) => {
         // Create a slight movement for each patch
         gsap.to(patch, {
-            scale: 1.05,
+            scale: 1.03,
             duration: 1.2 + (index * 0.2),
             repeat: -1,
             yoyo: true,
