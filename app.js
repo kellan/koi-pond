@@ -609,10 +609,9 @@ function createLilyPads(svg) {
             attempts++;
 
             // If we've tried too many times, reduce the number of lily pads
-            if (attempts > maxAttempts * 0.5 && lilyPadCount > 5) {
-                // Can't modify lilyPadCount directly as it's a const
-                // Instead, we'll break out of the loop early
-                console.log("Too many placement attempts, stopping lily pad creation at", i, "out of", lilyPadCount);
+            if (attempts > maxAttempts * 0.5 && i > 5) {
+                // Break out of the loop early if placement is too difficult
+                console.log("Too many placement attempts, stopping lily pad creation at", i, "out of", targetLilyPadCount);
                 break;
             }
         }
