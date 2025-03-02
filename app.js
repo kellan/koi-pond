@@ -89,60 +89,97 @@ function createKoiFish(svg) {
     
     // Create fish at various positions
     // First fish - starts at left edge, swimming right
-    koiFish.push(createSingleKoi({
+    const koi1 = createSingleKoi({
         x: 50,
         y: 200,
         rotation: 0,  // Swimming right
         scale: 0.7,   // Smaller scale
         spotCount: 3  // 3 kohaku patches
-    }));
+    });
+    koiFish.push(koi1);
     
     // Second fish - starts at bottom edge, swimming up
-    koiFish.push(createSingleKoi({
+    const koi2 = createSingleKoi({
         x: 700,
         y: 550,
         rotation: 270,  // Swimming up
         scale: 0.6,     // Smaller scale
         spotCount: 2    // 2 kohaku patches
-    }));
+    });
+    koiFish.push(koi2);
     
     // Third fish - starts at top edge, swimming down
-    koiFish.push(createSingleKoi({
+    const koi3 = createSingleKoi({
         x: 300,
         y: 50,
         rotation: 90,  // Swimming down
         scale: 0.5,    // Smaller scale
         spotCount: 4   // 4 kohaku patches
-    }));
+    });
+    koiFish.push(koi3);
     
     // Fourth fish - starts at right edge, swimming left
-    koiFish.push(createSingleKoi({
+    const koi4 = createSingleKoi({
         x: 950,
         y: 350,
         rotation: 180,  // Swimming left
         scale: 0.65,    // Smaller scale
         spotCount: 3    // 3 kohaku patches
-    }));
+    });
+    koiFish.push(koi4);
     
     // Fifth fish - starts in the middle, swimming diagonally
-    koiFish.push(createSingleKoi({
+    const koi5 = createSingleKoi({
         x: 500,
         y: 300,
         rotation: 45,  // Swimming diagonally
         scale: 0.55,   // Smaller scale
         spotCount: 2   // 2 kohaku patches
-    }));
+    });
+    koiFish.push(koi5);
+    
+    // Verify that fish were created successfully
+    console.log(`Created ${koiFish.length} koi fish`);
     
     // Insert the koi fish at the beginning of the SVG so they appear under lily pads
     // Use insertBefore with the first child to ensure they're at the bottom of the stack
     if (svg.firstChild) {
         koiFish.forEach(koi => {
-            svg.insertBefore(koi, svg.firstChild);
+            if (koi) {
+                svg.insertBefore(koi, svg.firstChild);
+            } else {
+                console.error("Failed to create a koi fish");
+            }
         });
     } else {
         koiFish.forEach(koi => {
-            svg.appendChild(koi);
+            if (koi) {
+                svg.appendChild(koi);
+            } else {
+                console.error("Failed to create a koi fish");
+            }
         });
+    }
+    
+    // Double-check that fish were added to the SVG
+    const fishInSvg = svg.querySelectorAll('.koi').length;
+    console.log(`Added ${fishInSvg} koi fish to the SVG`);
+    
+    // If no fish were added, try again with a simpler approach
+    if (fishInSvg === 0) {
+        console.warn("No fish were added, trying emergency fallback");
+        const emergencyKoi = createSingleKoi({
+            x: 500,
+            y: 300,
+            rotation: 0,
+            scale: 0.7,
+            spotCount: 3
+        });
+        
+        if (emergencyKoi) {
+            svg.appendChild(emergencyKoi);
+            console.log("Added emergency fallback fish");
+        }
     }
 }
 
@@ -203,9 +240,9 @@ function createSingleKoi(options) {
     // Define pattern types based on the kohaku reference image
     const patternTypes = [
         { name: 'headPatch', chance: 0.4 }, // Patch on head (less common)
-        { name: 'backPatch', chance: 0.8 }, // Large patch on back/middle (very common)
+        { name: 'backPatch', chance: 0.9 }, // Large patch on back/middle (very common)
         { name: 'tailPatch', chance: 0.6 }, // Patch near tail (common)
-        { name: 'bellyPatch', chance: 0.5 }  // Patch on belly/bottom (medium common)
+        { name: 'bellyPatch', chance: 0.4 }  // Patch on belly/bottom (less common)
     ];
     
     // Select which pattern elements to include
@@ -233,6 +270,16 @@ function createSingleKoi(options) {
                 selectedPatterns.push(remainingPatterns[0].name);
             }
         }
+    }
+    
+    // Prevent the problematic combination of just tail and belly patches
+    if (selectedPatterns.length === 2 && 
+        selectedPatterns.includes('tailPatch') && 
+        selectedPatterns.includes('bellyPatch') &&
+        !selectedPatterns.includes('backPatch') && 
+        !selectedPatterns.includes('headPatch')) {
+        // Add a back patch to create a more balanced pattern
+        selectedPatterns.push('backPatch');
     }
     
     // Create each selected pattern
@@ -271,48 +318,21 @@ function createSingleKoi(options) {
     function createHeadPatch(bodyRx, bodyRy) {
         const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         
-        // Head patch typically covers part of the head but not the eyes
-        // Start from one edge of the body and extend partway across
+        // Create a more organic, flowing shape for the head patch
+        // Use fewer points and more natural curves
+        
+        // Determine coverage area
         const headCoverage = 0.3 + Math.random() * 0.2; // Cover 30-50% of head length
-        const sideExtension = 0.7 + Math.random() * 0.3; // How far down the sides it extends
         
-        // Create points for the patch
-        const points = [];
+        // Create a more organic curve using fewer control points
+        let pathData = `M ${bodyRx},0`; // Start at the front of the fish
         
-        // Top edge points (following the curve of the body)
-        points.push({ x: bodyRx * (1 - headCoverage), y: -bodyRy * sideExtension });
-        points.push({ x: bodyRx, y: -bodyRy * (0.3 + Math.random() * 0.4) });
+        // Create a flowing curve that wraps around part of the head
+        pathData += ` C ${bodyRx},${-bodyRy * 0.7} ${bodyRx * (1-headCoverage) * 1.2},${-bodyRy * 0.9} ${bodyRx * (1-headCoverage)},${-bodyRy * 0.7}`;
+        pathData += ` C ${bodyRx * (1-headCoverage) * 0.8},${-bodyRy * 0.5} ${bodyRx * (1-headCoverage) * 0.8},${bodyRy * 0.5} ${bodyRx * (1-headCoverage)},${bodyRy * 0.7}`;
+        pathData += ` C ${bodyRx * (1-headCoverage) * 1.2},${bodyRy * 0.9} ${bodyRx},${bodyRy * 0.7} ${bodyRx},0`;
         
-        // Bottom edge points
-        points.push({ x: bodyRx, y: bodyRy * (0.3 + Math.random() * 0.4) });
-        points.push({ x: bodyRx * (1 - headCoverage), y: bodyRy * sideExtension });
-        
-        // Create the path data
-        let pathData = `M ${points[0].x},${points[0].y} `;
-        
-        // Add curves between points
-        for (let i = 1; i < points.length; i++) {
-            const prevPoint = points[i-1];
-            const currPoint = points[i];
-            
-            // Create control points for the curve
-            const cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-            const cpY1 = prevPoint.y;
-            const cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-            const cpY2 = currPoint.y;
-            
-            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
-        }
-        
-        // Close the path with a curve back to the start
-        const firstPoint = points[0];
-        const lastPoint = points[points.length-1];
-        const cpX1 = lastPoint.x - (bodyRx * 0.2);
-        const cpY1 = lastPoint.y;
-        const cpX2 = firstPoint.x - (bodyRx * 0.2);
-        const cpY2 = firstPoint.y;
-        
-        pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${firstPoint.x},${firstPoint.y} Z`;
+        pathData += ' Z'; // Close the path
         
         patch.setAttribute('d', pathData);
         return patch;
@@ -322,67 +342,49 @@ function createSingleKoi(options) {
     function createBackPatch(bodyRx, bodyRy) {
         const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         
-        // Back patch typically covers a large portion of the middle/back
+        // Create a more organic, flowing shape for the back patch
+        
         // Determine the coverage area
         const startX = bodyRx * (0.3 + Math.random() * 0.2); // Start 30-50% from head
         const endX = -bodyRx * (0.1 + Math.random() * 0.3); // End 10-40% from tail
-        const topExtension = 1.0; // Extend fully to the top edge
-        const bottomExtension = Math.random() < 0.5 ? 0.3 + Math.random() * 0.3 : 1.0; // Sometimes extend to bottom
         
-        // Create points for the patch
-        const points = [];
+        // Determine if the patch extends to the bottom
+        const extendsToBottom = Math.random() < 0.5;
         
-        // Front edge points
-        points.push({ x: startX, y: -bodyRy * topExtension });
+        // Create a flowing, organic shape
+        let pathData;
         
-        // If not extending to bottom, add points to curve around
-        if (bottomExtension < 1.0) {
-            points.push({ x: startX + (endX - startX) * 0.3, y: -bodyRy * 0.8 });
-            points.push({ x: startX + (endX - startX) * 0.7, y: -bodyRy * 0.9 });
-            points.push({ x: endX, y: -bodyRy * topExtension });
+        if (extendsToBottom) {
+            // Create a patch that wraps around from top to bottom
+            pathData = `M ${startX},${-bodyRy}`; // Start at top edge
+            
+            // Curve to the back end at the top
+            pathData += ` C ${(startX + endX)/2},${-bodyRy * 1.1} ${endX * 1.2},${-bodyRy * 0.9} ${endX},${-bodyRy * 0.8}`;
+            
+            // Curve down to the bottom
+            pathData += ` C ${endX * 0.9},${-bodyRy * 0.4} ${endX * 0.9},${bodyRy * 0.4} ${endX},${bodyRy * 0.8}`;
+            
+            // Curve to the front at the bottom
+            pathData += ` C ${endX * 1.2},${bodyRy * 0.9} ${(startX + endX)/2},${bodyRy * 1.1} ${startX},${bodyRy}`;
+            
+            // Curve back to the starting point
+            pathData += ` C ${startX * 1.1},${bodyRy * 0.5} ${startX * 1.1},${-bodyRy * 0.5} ${startX},${-bodyRy}`;
         } else {
-            // If extending to bottom, go all the way around
-            points.push({ x: startX, y: bodyRy * bottomExtension });
-            points.push({ x: endX, y: bodyRy * bottomExtension });
-            points.push({ x: endX, y: -bodyRy * topExtension });
+            // Create a patch that stays on the top/back
+            pathData = `M ${startX},${-bodyRy}`; // Start at top edge
+            
+            // Create a flowing curve along the back
+            pathData += ` C ${(startX + endX*0.7)/2},${-bodyRy * 1.1} ${endX * 1.2},${-bodyRy * 0.9} ${endX},${-bodyRy * 0.8}`;
+            
+            // Curve down slightly
+            const bottomY = -bodyRy * (0.2 + Math.random() * 0.3); // How far down it extends
+            pathData += ` C ${endX * 0.9},${-bodyRy * 0.6} ${(startX + endX)/2 * 0.8},${bottomY * 1.2} ${(startX + endX)/2},${bottomY}`;
+            
+            // Curve back to the starting point
+            pathData += ` C ${(startX + endX)/2 * 1.2},${bottomY * 0.8} ${startX * 0.9},${-bodyRy * 0.6} ${startX},${-bodyRy}`;
         }
         
-        // Create the path data
-        let pathData = `M ${points[0].x},${points[0].y} `;
-        
-        // Add curves between points
-        for (let i = 1; i < points.length; i++) {
-            const prevPoint = points[i-1];
-            const currPoint = points[i];
-            
-            // Create control points for the curve
-            let cpX1, cpY1, cpX2, cpY2;
-            
-            if (i === 1 && bottomExtension >= 1.0) {
-                // Special case for the first curve when wrapping around
-                cpX1 = prevPoint.x;
-                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-                cpX2 = currPoint.x;
-                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-            } else if (i === 3 && bottomExtension >= 1.0) {
-                // Special case for the last curve when wrapping around
-                cpX1 = prevPoint.x;
-                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-                cpX2 = currPoint.x;
-                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-            } else {
-                // Standard curve
-                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY1 = prevPoint.y;
-                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY2 = currPoint.y;
-            }
-            
-            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
-        }
-        
-        // Close the path
-        pathData += 'Z';
+        pathData += ' Z'; // Close the path
         
         patch.setAttribute('d', pathData);
         return patch;
@@ -392,62 +394,25 @@ function createSingleKoi(options) {
     function createTailPatch(bodyRx, bodyRy) {
         const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         
-        // Tail patch typically covers the tail area
+        // Create a more organic, flowing shape for the tail patch
+        
         // Determine the coverage area
         const startX = -bodyRx * (0.3 + Math.random() * 0.2); // Start 30-50% from end
-        const endX = -bodyRx; // End at the tail
-        const topExtension = 0.7 + Math.random() * 0.3; // How far up it extends
-        const bottomExtension = 0.7 + Math.random() * 0.3; // How far down it extends
+        const tailTip = -bodyRx - (Math.random() * 10); // Extend slightly beyond the tail
         
-        // Create points for the patch
-        const points = [];
+        // Create a flowing, organic shape
+        let pathData = `M ${startX},${-bodyRy * 0.7}`; // Start at top
         
-        // Add points to define the patch
-        points.push({ x: startX, y: -bodyRy * topExtension });
-        points.push({ x: endX * 0.9, y: -bodyRy * topExtension * 0.8 });
-        points.push({ x: endX, y: 0 }); // Tail tip
-        points.push({ x: endX * 0.9, y: bodyRy * bottomExtension * 0.8 });
-        points.push({ x: startX, y: bodyRy * bottomExtension });
+        // Curve to the tail tip
+        pathData += ` C ${(startX + tailTip)/2 * 1.1},${-bodyRy * 0.5} ${tailTip * 0.9},${-bodyRy * 0.3} ${tailTip},0`;
         
-        // Create the path data
-        let pathData = `M ${points[0].x},${points[0].y} `;
+        // Curve to the bottom
+        pathData += ` C ${tailTip * 0.9},${bodyRy * 0.3} ${(startX + tailTip)/2 * 1.1},${bodyRy * 0.5} ${startX},${bodyRy * 0.7}`;
         
-        // Add curves between points
-        for (let i = 1; i < points.length; i++) {
-            const prevPoint = points[i-1];
-            const currPoint = points[i];
-            
-            // Create control points for the curve
-            let cpX1, cpY1, cpX2, cpY2;
-            
-            if (i === 2) { // Special case for the tail tip
-                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.7;
-                cpY1 = prevPoint.y;
-                cpX2 = currPoint.x;
-                cpY2 = currPoint.y - (currPoint.y - prevPoint.y) * 0.5;
-            } else if (i === 3) { // Special case after the tail tip
-                cpX1 = prevPoint.x;
-                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-                cpX2 = currPoint.x + (prevPoint.x - currPoint.x) * 0.7;
-                cpY2 = currPoint.y;
-            } else {
-                // Standard curve
-                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY1 = prevPoint.y;
-                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY2 = currPoint.y;
-            }
-            
-            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
-        }
+        // Curve back to the starting point
+        pathData += ` C ${startX * 0.9},${bodyRy * 0.3} ${startX * 0.9},${-bodyRy * 0.3} ${startX},${-bodyRy * 0.7}`;
         
-        // Close the path with a curve
-        const firstPoint = points[0];
-        const lastPoint = points[points.length-1];
-        
-        pathData += `C ${lastPoint.x + (firstPoint.x - lastPoint.x) * 0.3},${lastPoint.y} 
-                      ${lastPoint.x + (firstPoint.x - lastPoint.x) * 0.7},${firstPoint.y} 
-                      ${firstPoint.x},${firstPoint.y} Z`;
+        pathData += ' Z'; // Close the path
         
         patch.setAttribute('d', pathData);
         return patch;
@@ -457,52 +422,29 @@ function createSingleKoi(options) {
     function createBellyPatch(bodyRx, bodyRy) {
         const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         
-        // Belly patch typically covers part of the bottom/belly area
+        // Create a more organic, flowing shape for the belly patch
+        
         // Determine the coverage area
         const startX = bodyRx * (0.1 + Math.random() * 0.2); // Start 10-30% from head
         const endX = -bodyRx * (0.2 + Math.random() * 0.3); // End 20-50% from tail
-        const bottomExtension = 1.0; // Extend fully to the bottom edge
-        const topExtension = 0.2 + Math.random() * 0.3; // How far up it extends
         
-        // Create points for the patch
-        const points = [];
+        // Create a flowing, organic shape
+        let pathData = `M ${startX},${bodyRy}`; // Start at bottom edge
         
-        // Add points to define the patch
-        points.push({ x: startX, y: bodyRy * bottomExtension });
-        points.push({ x: startX, y: bodyRy * topExtension });
-        points.push({ x: startX + (endX - startX) * 0.5, y: bodyRy * (topExtension + 0.1) });
-        points.push({ x: endX, y: bodyRy * topExtension });
-        points.push({ x: endX, y: bodyRy * bottomExtension });
+        // Create a flowing curve along the belly
+        const peakY = bodyRy * (0.3 + Math.random() * 0.3); // How far up it extends
+        const peakX = startX + (endX - startX) * (0.3 + Math.random() * 0.4); // Position of the highest point
         
-        // Create the path data
-        let pathData = `M ${points[0].x},${points[0].y} `;
+        // Curve to the peak
+        pathData += ` C ${startX * 0.9},${bodyRy * 0.8} ${peakX * 0.8},${peakY * 1.2} ${peakX},${peakY}`;
         
-        // Add curves between points
-        for (let i = 1; i < points.length; i++) {
-            const prevPoint = points[i-1];
-            const currPoint = points[i];
-            
-            // Create control points for the curve
-            let cpX1, cpY1, cpX2, cpY2;
-            
-            if (i === 1 || i === 4) { // Vertical segments
-                cpX1 = prevPoint.x;
-                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-                cpX2 = currPoint.x;
-                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
-            } else {
-                // Standard curve
-                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY1 = prevPoint.y;
-                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
-                cpY2 = currPoint.y;
-            }
-            
-            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
-        }
+        // Curve to the end point
+        pathData += ` C ${peakX * 1.2},${peakY * 0.8} ${endX * 1.1},${bodyRy * 0.8} ${endX},${bodyRy}`;
         
-        // Close the path
-        pathData += 'Z';
+        // Curve along the bottom edge back to start
+        pathData += ` C ${(startX + endX)/2},${bodyRy * 1.1} ${startX * 0.9},${bodyRy * 1.1} ${startX},${bodyRy}`;
+        
+        pathData += ' Z'; // Close the path
         
         patch.setAttribute('d', pathData);
         return patch;
