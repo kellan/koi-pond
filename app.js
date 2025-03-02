@@ -197,108 +197,315 @@ function createSingleKoi(options) {
     let attempts = 0;
     const maxAttempts = 50;
     
-    // Create 2-4 smaller patches in a pattern similar to kohaku koi
+    // Create larger patches that extend to the edges like in the reference image
     const patchCount = 2 + Math.floor(Math.random() * 3); // 2-4 patches
     
-    // Define regions for patch placement based on kohaku pattern
-    // Avoid the first 10% of the fish (head area)
-    const regions = [
-        { xMin: bodyRx * 0.1, xMax: bodyRx * 0.3, yFactor: 0.7 }, // Behind head, top
-        { xMin: bodyRx * 0.3, xMax: bodyRx * 0.6, yFactor: 0.8 }, // Middle body, top
-        { xMin: -bodyRx * 0.2, xMax: bodyRx * 0.1, yFactor: 0.6 }, // Tail area, top
-        { xMin: bodyRx * 0.2, xMax: bodyRx * 0.5, yFactor: -0.7 }  // Middle body, bottom (less common)
+    // Define pattern types based on the kohaku reference image
+    const patternTypes = [
+        { name: 'headPatch', chance: 0.4 }, // Patch on head (less common)
+        { name: 'backPatch', chance: 0.8 }, // Large patch on back/middle (very common)
+        { name: 'tailPatch', chance: 0.6 }, // Patch near tail (common)
+        { name: 'bellyPatch', chance: 0.5 }  // Patch on belly/bottom (medium common)
     ];
     
-    // Maximum patch size is 10% of fish body
-    const maxPatchSize = Math.min(bodyRx, bodyRy) * 0.3; // 10% of body dimension
+    // Select which pattern elements to include
+    const selectedPatterns = [];
+    patternTypes.forEach(pattern => {
+        if (Math.random() < pattern.chance) {
+            selectedPatterns.push(pattern.name);
+        }
+    });
     
-    // Place patches in different regions
-    for (let i = 0; i < patchCount && attempts < maxAttempts; i++) {
-        // Select a region, favoring top regions
-        const regionIndex = Math.random() < 0.7 ? 
-            Math.floor(Math.random() * 3) : // 70% chance for top regions (0-2)
-            3; // 30% chance for bottom region (3)
-        
-        const region = regions[regionIndex];
-        
-        // Generate a patch within the selected region
-        const patchRadius = maxPatchSize * (0.5 + Math.random() * 0.5); // 50-100% of max size
-        
-        // Try to find a non-overlapping position
-        let validPosition = false;
-        let patchX, patchY;
-        let positionAttempts = 0;
-        
-        while (!validPosition && positionAttempts < 20) {
-            // Generate position within the selected region
-            patchX = region.xMin + Math.random() * (region.xMax - region.xMin);
-            
-            // Y position based on region's yFactor (positive for top, negative for bottom)
-            const yRange = bodyRy * 0.6; // Limit vertical range
-            patchY = region.yFactor > 0 ? 
-                -Math.random() * yRange * region.yFactor : // Top regions
-                Math.random() * yRange * Math.abs(region.yFactor); // Bottom region
-            
-            // Check if this position overlaps with any existing patch
-            validPosition = true;
-            for (const existingPatch of placedSpots) {
-                const dx = patchX - existingPatch.x;
-                const dy = patchY - existingPatch.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < patchRadius + existingPatch.radius + 2) { // Smaller buffer
-                    validPosition = false;
-                    break;
-                }
-            }
-            
-            positionAttempts++;
+    // Ensure we have at least 2 patterns
+    if (selectedPatterns.length < 2) {
+        // Add the back patch if not already selected (most common in kohaku)
+        if (!selectedPatterns.includes('backPatch')) {
+            selectedPatterns.push('backPatch');
         }
         
-        if (validPosition) {
-            // Create an irregular, organic patch shape inspired by kohaku pattern
-            const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        // If still need one more, add another random pattern
+        if (selectedPatterns.length < 2) {
+            const remainingPatterns = patternTypes
+                .filter(p => !selectedPatterns.includes(p.name))
+                .sort((a, b) => b.chance - a.chance);
             
-            // Create an organic shape for the red patch
-            let pathData = 'M ';
-            const points = 6 + Math.floor(Math.random() * 4); // 6-9 points for organic shape
-            
-            for (let j = 0; j <= points; j++) {
-                const angle = (j / points) * Math.PI * 2;
-                
-                // Create more natural, flowing shapes like in kohaku pattern
-                // More elongated in the direction of the fish body
-                const xStretch = 1.2 + Math.random() * 0.4; // Stretch horizontally
-                const yStretch = 0.8 + Math.random() * 0.3; // Less vertical stretch
-                
-                const radius = patchRadius * (0.8 + Math.random() * 0.3);
-                const x = patchX + Math.cos(angle) * radius * xStretch;
-                const y = patchY + Math.sin(angle) * radius * yStretch;
-                
-                if (j === 0) {
-                    pathData += `${x},${y} `;
-                } else {
-                    // Use quadratic curves for smoother, organic shapes
-                    const prevAngle = ((j-1) / points) * Math.PI * 2;
-                    const cpX = patchX + Math.cos((prevAngle + angle) / 2) * radius * 1.1 * xStretch;
-                    const cpY = patchY + Math.sin((prevAngle + angle) / 2) * radius * 1.1 * yStretch;
-                    
-                    pathData += `Q ${cpX},${cpY} ${x},${y} `;
-                }
+            if (remainingPatterns.length > 0) {
+                selectedPatterns.push(remainingPatterns[0].name);
             }
+        }
+    }
+    
+    // Create each selected pattern
+    for (const patternName of selectedPatterns) {
+        let patchPath;
+        
+        switch (patternName) {
+            case 'headPatch':
+                // Create a patch on the head area
+                patchPath = createHeadPatch(bodyRx, bodyRy);
+                break;
+                
+            case 'backPatch':
+                // Create a large patch on the back/middle area
+                patchPath = createBackPatch(bodyRx, bodyRy);
+                break;
+                
+            case 'tailPatch':
+                // Create a patch near the tail
+                patchPath = createTailPatch(bodyRx, bodyRy);
+                break;
+                
+            case 'bellyPatch':
+                // Create a patch on the belly/bottom
+                patchPath = createBellyPatch(bodyRx, bodyRy);
+                break;
+        }
+        
+        if (patchPath) {
+            patchPath.setAttribute('fill', '#ff4d4d'); // Bright orange-red for kohaku pattern
+            spotsGroup.appendChild(patchPath);
+        }
+    }
+    
+    // Helper function to create a head patch
+    function createHeadPatch(bodyRx, bodyRy) {
+        const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        // Head patch typically covers part of the head but not the eyes
+        // Start from one edge of the body and extend partway across
+        const headCoverage = 0.3 + Math.random() * 0.2; // Cover 30-50% of head length
+        const sideExtension = 0.7 + Math.random() * 0.3; // How far down the sides it extends
+        
+        // Create points for the patch
+        const points = [];
+        
+        // Top edge points (following the curve of the body)
+        points.push({ x: bodyRx * (1 - headCoverage), y: -bodyRy * sideExtension });
+        points.push({ x: bodyRx, y: -bodyRy * (0.3 + Math.random() * 0.4) });
+        
+        // Bottom edge points
+        points.push({ x: bodyRx, y: bodyRy * (0.3 + Math.random() * 0.4) });
+        points.push({ x: bodyRx * (1 - headCoverage), y: bodyRy * sideExtension });
+        
+        // Create the path data
+        let pathData = `M ${points[0].x},${points[0].y} `;
+        
+        // Add curves between points
+        for (let i = 1; i < points.length; i++) {
+            const prevPoint = points[i-1];
+            const currPoint = points[i];
             
-            pathData += 'Z'; // Close the path
-            patch.setAttribute('d', pathData);
-            patch.setAttribute('fill', '#ff4d4d'); // Bright orange-red for kohaku pattern
-            spotsGroup.appendChild(patch);
+            // Create control points for the curve
+            const cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+            const cpY1 = prevPoint.y;
+            const cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+            const cpY2 = currPoint.y;
             
-            // Remember this patch's position and radius
-            placedSpots.push({ x: patchX, y: patchY, radius: patchRadius });
+            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
+        }
+        
+        // Close the path with a curve back to the start
+        const firstPoint = points[0];
+        const lastPoint = points[points.length-1];
+        const cpX1 = lastPoint.x - (bodyRx * 0.2);
+        const cpY1 = lastPoint.y;
+        const cpX2 = firstPoint.x - (bodyRx * 0.2);
+        const cpY2 = firstPoint.y;
+        
+        pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${firstPoint.x},${firstPoint.y} Z`;
+        
+        patch.setAttribute('d', pathData);
+        return patch;
+    }
+    
+    // Helper function to create a back patch
+    function createBackPatch(bodyRx, bodyRy) {
+        const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        // Back patch typically covers a large portion of the middle/back
+        // Determine the coverage area
+        const startX = bodyRx * (0.3 + Math.random() * 0.2); // Start 30-50% from head
+        const endX = -bodyRx * (0.1 + Math.random() * 0.3); // End 10-40% from tail
+        const topExtension = 1.0; // Extend fully to the top edge
+        const bottomExtension = Math.random() < 0.5 ? 0.3 + Math.random() * 0.3 : 1.0; // Sometimes extend to bottom
+        
+        // Create points for the patch
+        const points = [];
+        
+        // Front edge points
+        points.push({ x: startX, y: -bodyRy * topExtension });
+        
+        // If not extending to bottom, add points to curve around
+        if (bottomExtension < 1.0) {
+            points.push({ x: startX + (endX - startX) * 0.3, y: -bodyRy * 0.8 });
+            points.push({ x: startX + (endX - startX) * 0.7, y: -bodyRy * 0.9 });
+            points.push({ x: endX, y: -bodyRy * topExtension });
         } else {
-            // If we couldn't place this patch, try again
-            i--;
-            attempts++;
+            // If extending to bottom, go all the way around
+            points.push({ x: startX, y: bodyRy * bottomExtension });
+            points.push({ x: endX, y: bodyRy * bottomExtension });
+            points.push({ x: endX, y: -bodyRy * topExtension });
         }
+        
+        // Create the path data
+        let pathData = `M ${points[0].x},${points[0].y} `;
+        
+        // Add curves between points
+        for (let i = 1; i < points.length; i++) {
+            const prevPoint = points[i-1];
+            const currPoint = points[i];
+            
+            // Create control points for the curve
+            let cpX1, cpY1, cpX2, cpY2;
+            
+            if (i === 1 && bottomExtension >= 1.0) {
+                // Special case for the first curve when wrapping around
+                cpX1 = prevPoint.x;
+                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+                cpX2 = currPoint.x;
+                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+            } else if (i === 3 && bottomExtension >= 1.0) {
+                // Special case for the last curve when wrapping around
+                cpX1 = prevPoint.x;
+                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+                cpX2 = currPoint.x;
+                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+            } else {
+                // Standard curve
+                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY1 = prevPoint.y;
+                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY2 = currPoint.y;
+            }
+            
+            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
+        }
+        
+        // Close the path
+        pathData += 'Z';
+        
+        patch.setAttribute('d', pathData);
+        return patch;
+    }
+    
+    // Helper function to create a tail patch
+    function createTailPatch(bodyRx, bodyRy) {
+        const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        // Tail patch typically covers the tail area
+        // Determine the coverage area
+        const startX = -bodyRx * (0.3 + Math.random() * 0.2); // Start 30-50% from end
+        const endX = -bodyRx; // End at the tail
+        const topExtension = 0.7 + Math.random() * 0.3; // How far up it extends
+        const bottomExtension = 0.7 + Math.random() * 0.3; // How far down it extends
+        
+        // Create points for the patch
+        const points = [];
+        
+        // Add points to define the patch
+        points.push({ x: startX, y: -bodyRy * topExtension });
+        points.push({ x: endX * 0.9, y: -bodyRy * topExtension * 0.8 });
+        points.push({ x: endX, y: 0 }); // Tail tip
+        points.push({ x: endX * 0.9, y: bodyRy * bottomExtension * 0.8 });
+        points.push({ x: startX, y: bodyRy * bottomExtension });
+        
+        // Create the path data
+        let pathData = `M ${points[0].x},${points[0].y} `;
+        
+        // Add curves between points
+        for (let i = 1; i < points.length; i++) {
+            const prevPoint = points[i-1];
+            const currPoint = points[i];
+            
+            // Create control points for the curve
+            let cpX1, cpY1, cpX2, cpY2;
+            
+            if (i === 2) { // Special case for the tail tip
+                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.7;
+                cpY1 = prevPoint.y;
+                cpX2 = currPoint.x;
+                cpY2 = currPoint.y - (currPoint.y - prevPoint.y) * 0.5;
+            } else if (i === 3) { // Special case after the tail tip
+                cpX1 = prevPoint.x;
+                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+                cpX2 = currPoint.x + (prevPoint.x - currPoint.x) * 0.7;
+                cpY2 = currPoint.y;
+            } else {
+                // Standard curve
+                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY1 = prevPoint.y;
+                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY2 = currPoint.y;
+            }
+            
+            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
+        }
+        
+        // Close the path with a curve
+        const firstPoint = points[0];
+        const lastPoint = points[points.length-1];
+        
+        pathData += `C ${lastPoint.x + (firstPoint.x - lastPoint.x) * 0.3},${lastPoint.y} 
+                      ${lastPoint.x + (firstPoint.x - lastPoint.x) * 0.7},${firstPoint.y} 
+                      ${firstPoint.x},${firstPoint.y} Z`;
+        
+        patch.setAttribute('d', pathData);
+        return patch;
+    }
+    
+    // Helper function to create a belly patch
+    function createBellyPatch(bodyRx, bodyRy) {
+        const patch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        
+        // Belly patch typically covers part of the bottom/belly area
+        // Determine the coverage area
+        const startX = bodyRx * (0.1 + Math.random() * 0.2); // Start 10-30% from head
+        const endX = -bodyRx * (0.2 + Math.random() * 0.3); // End 20-50% from tail
+        const bottomExtension = 1.0; // Extend fully to the bottom edge
+        const topExtension = 0.2 + Math.random() * 0.3; // How far up it extends
+        
+        // Create points for the patch
+        const points = [];
+        
+        // Add points to define the patch
+        points.push({ x: startX, y: bodyRy * bottomExtension });
+        points.push({ x: startX, y: bodyRy * topExtension });
+        points.push({ x: startX + (endX - startX) * 0.5, y: bodyRy * (topExtension + 0.1) });
+        points.push({ x: endX, y: bodyRy * topExtension });
+        points.push({ x: endX, y: bodyRy * bottomExtension });
+        
+        // Create the path data
+        let pathData = `M ${points[0].x},${points[0].y} `;
+        
+        // Add curves between points
+        for (let i = 1; i < points.length; i++) {
+            const prevPoint = points[i-1];
+            const currPoint = points[i];
+            
+            // Create control points for the curve
+            let cpX1, cpY1, cpX2, cpY2;
+            
+            if (i === 1 || i === 4) { // Vertical segments
+                cpX1 = prevPoint.x;
+                cpY1 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+                cpX2 = currPoint.x;
+                cpY2 = prevPoint.y + (currPoint.y - prevPoint.y) * 0.5;
+            } else {
+                // Standard curve
+                cpX1 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY1 = prevPoint.y;
+                cpX2 = prevPoint.x + (currPoint.x - prevPoint.x) * 0.5;
+                cpY2 = currPoint.y;
+            }
+            
+            pathData += `C ${cpX1},${cpY1} ${cpX2},${cpY2} ${currPoint.x},${currPoint.y} `;
+        }
+        
+        // Close the path
+        pathData += 'Z';
+        
+        patch.setAttribute('d', pathData);
+        return patch;
     }
     
     return koiGroup;
@@ -654,10 +861,10 @@ function addWiggleToFish(koi) {
     // Add subtle movement to the kohaku patches
     const patches = koi.querySelectorAll('g[clip-path] path');
     patches.forEach((patch, index) => {
-        // Create a slight movement for each patch
+        // Create a very slight movement for each patch
         gsap.to(patch, {
-            scale: 1.03,
-            duration: 1.2 + (index * 0.2),
+            scale: 1.02,
+            duration: 1.5 + (index * 0.3),
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut"
