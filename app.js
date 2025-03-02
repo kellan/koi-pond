@@ -332,12 +332,95 @@ function createLilyPads(svg) {
             
             lilyPad.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}) scale(${scale})`);
             
-            // Create the lily pad shape (circle with a cut)
-            // Using radius of 50 with scale of 1.6 gives diameter of ~160 units, matching fish length
-            const pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            pad.setAttribute('d', 'M 0,0 A 50,50 0 1 1 0,0.1 L 0,0 z');
-            pad.setAttribute('fill', colors[Math.floor(Math.random() * colors.length)]);
-            lilyPad.appendChild(pad);
+            // Create varied lily pad shapes inspired by the image
+            const shapeType = Math.floor(Math.random() * 4); // 0-3 for different shape types
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            if (shapeType === 0) {
+                // Ellipse/oval shape (like in the image)
+                const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                // Randomize the aspect ratio
+                const aspectRatio = 0.6 + Math.random() * 0.8; // Between 0.6 and 1.4
+                ellipse.setAttribute('cx', '0');
+                ellipse.setAttribute('cy', '0');
+                ellipse.setAttribute('rx', '50');
+                ellipse.setAttribute('ry', 50 * aspectRatio);
+                ellipse.setAttribute('fill', color);
+                lilyPad.appendChild(ellipse);
+            } 
+            else if (shapeType === 1) {
+                // Organic blob shape with bezier curves
+                const blob = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                
+                // Create an organic shape with 6-8 points and bezier curves
+                const points = 6 + Math.floor(Math.random() * 3);
+                let pathData = '';
+                
+                for (let j = 0; j <= points; j++) {
+                    const angle = (j / points) * Math.PI * 2;
+                    // Vary the radius to create irregular shapes
+                    const radius = 50 * (0.8 + Math.random() * 0.4);
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    
+                    if (j === 0) {
+                        pathData = `M ${x},${y}`;
+                    } else {
+                        // Use bezier curves for smooth, organic shapes
+                        const prevAngle = ((j-1) / points) * Math.PI * 2;
+                        const cpRadius = radius * (0.9 + Math.random() * 0.2);
+                        
+                        // Control points for the bezier curve
+                        const cp1x = Math.cos(prevAngle + (angle - prevAngle) * 0.3) * cpRadius * 1.2;
+                        const cp1y = Math.sin(prevAngle + (angle - prevAngle) * 0.3) * cpRadius * 1.2;
+                        const cp2x = Math.cos(angle - (angle - prevAngle) * 0.3) * cpRadius * 1.2;
+                        const cp2y = Math.sin(angle - (angle - prevAngle) * 0.3) * cpRadius * 1.2;
+                        
+                        pathData += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+                    }
+                }
+                
+                pathData += ' Z'; // Close the path
+                blob.setAttribute('d', pathData);
+                blob.setAttribute('fill', color);
+                lilyPad.appendChild(blob);
+            }
+            else if (shapeType === 2) {
+                // Rounded rectangle or pill shape (seen in the image)
+                const roundedRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const width = 100;
+                const height = 40 + Math.random() * 60; // Vary height for different proportions
+                const cornerRadius = 20 + Math.random() * 30; // Rounded corners
+                
+                roundedRect.setAttribute('x', -width/2);
+                roundedRect.setAttribute('y', -height/2);
+                roundedRect.setAttribute('width', width);
+                roundedRect.setAttribute('height', height);
+                roundedRect.setAttribute('rx', cornerRadius);
+                roundedRect.setAttribute('ry', cornerRadius);
+                roundedRect.setAttribute('fill', color);
+                lilyPad.appendChild(roundedRect);
+            }
+            else {
+                // Circle with a bite or cut (like traditional lily pad)
+                const pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                // Create a circle with a random cut/bite
+                const cutAngle = Math.random() * Math.PI * 2; // Random position for the cut
+                const cutWidth = Math.PI / 6 + (Math.random() * Math.PI / 6); // Size of the cut
+                
+                // Start and end points of the arc
+                const startX = Math.cos(cutAngle) * 50;
+                const startY = Math.sin(cutAngle) * 50;
+                const endX = Math.cos(cutAngle + cutWidth) * 50;
+                const endY = Math.sin(cutAngle + cutWidth) * 50;
+                
+                // Create the path: move to start, arc around, then close through center
+                const pathData = `M ${startX},${startY} A 50,50 0 1 1 ${endX},${endY} L 0,0 Z`;
+                
+                pad.setAttribute('d', pathData);
+                pad.setAttribute('fill', color);
+                lilyPad.appendChild(pad);
+            }
             
             svg.appendChild(lilyPad);
             
