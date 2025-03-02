@@ -9,8 +9,39 @@ function debug(...args) {
     }
 }
 
+// Browser detection for debugging
+function getBrowserInfo() {
+    const ua = navigator.userAgent;
+    let browserName = "Unknown";
+    let browserVersion = "Unknown";
+    
+    if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) {
+        browserName = "Safari";
+        const match = ua.match(/Version\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+    } else if (ua.indexOf("Chrome") > -1) {
+        browserName = "Chrome";
+        const match = ua.match(/Chrome\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+    } else if (ua.indexOf("Firefox") > -1) {
+        browserName = "Firefox";
+        const match = ua.match(/Firefox\/(\d+\.\d+)/);
+        if (match) browserVersion = match[1];
+    }
+    
+    return { name: browserName, version: browserVersion };
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    debug('App loaded');
+    const browser = getBrowserInfo();
+    debug('App loaded on', browser.name, browser.version);
+    
+    // Enable debug mode automatically on Safari for testing
+    if (browser.name === "Safari") {
+        window.DEBUG = true;
+        console.log("Debug mode automatically enabled for Safari");
+    }
+    
     initKoiPond();
 
     // Add click event listener to create new koi fish
@@ -88,7 +119,16 @@ function initKoiPond() {
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '100%');
     svg.setAttribute('viewBox', '0 0 1000 600'); // Changed to a wider aspect ratio
-    svg.setAttribute('preserveAspectRatio', 'xMinYMin slice'); // Changed to slice mode to ensure full coverage
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid slice'); // Use xMidYMid for better centering
+    
+    // Add explicit dimensions to help Safari with coordinate system
+    const containerRect = container.getBoundingClientRect();
+    debug('Container dimensions:', containerRect.width, 'x', containerRect.height);
+    
+    // Explicitly set the SVG dimensions in pixels as well
+    svg.style.width = containerRect.width + 'px';
+    svg.style.height = containerRect.height + 'px';
+    
     container.appendChild(svg);
 
     // Create lily pads first so they appear behind the fish
@@ -99,6 +139,14 @@ function initKoiPond() {
 
     // Start animations
     animateElements();
+    
+    // Add window resize handler to update SVG dimensions
+    window.addEventListener('resize', function() {
+        const newRect = container.getBoundingClientRect();
+        svg.style.width = newRect.width + 'px';
+        svg.style.height = newRect.height + 'px';
+        debug('Window resized, new dimensions:', newRect.width, 'x', newRect.height);
+    });
 }
 
 function createKoiFish(svg) {
@@ -834,10 +882,19 @@ function animateKoi(koi) {
         // Use different easing for different segments to create more natural movement
         const ease = index % 2 === 0 ? "sine.inOut" : "power1.inOut";
 
+        // Use x, y, rotation properties instead of transform attribute for better cross-browser compatibility
+        const transformVars = {
+            x: point.x,
+            y: point.y,
+            rotation: point.rotation,
+            scale: 0.8 + Math.random() * 0.4,
+            transformOrigin: "50% 50%", // Use transformOrigin instead of svgOrigin
+            ease: ease
+        };
+        
         timeline.to(koi, {
             duration: point.duration,
-            svgOrigin: "500 500",
-            attr: { transform: `translate(${point.x}, ${point.y}) rotate(${point.rotation}) scale(${0.8 + Math.random() * 0.4})` },
+            attr: { transform: `translate(${point.x}, ${point.y}) rotate(${point.rotation}) scale(${transformVars.scale})` },
             ease: ease
         });
     });
@@ -889,12 +946,31 @@ function animateLilyPad(lilyPad) {
     const rotationAmount = 2 + Math.random() * 3; // Reduced from 5-15 to 2-5 degrees
     const duration = 5 + Math.random() * 3; // Increased from 3-5 to 5-8 seconds
 
-    gsap.to(lilyPad, {
-        duration: duration,
-        rotation: `+=${rotationAmount}`,
-        svgOrigin: "500 500",
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true
-    });
+    // Get the current transform to extract the translation
+    const transform = lilyPad.getAttribute('transform') || '';
+    const translateMatch = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+    
+    if (translateMatch) {
+        const centerX = parseFloat(translateMatch[1]);
+        const centerY = parseFloat(translateMatch[2]);
+        
+        gsap.to(lilyPad, {
+            duration: duration,
+            rotation: `+=${rotationAmount}`,
+            transformOrigin: `${centerX}px ${centerY}px`, // Use the lily pad's own center
+            ease: "sine.inOut",
+            repeat: -1,
+            yoyo: true
+        });
+    } else {
+        // Fallback if we can't extract the translation
+        gsap.to(lilyPad, {
+            duration: duration,
+            rotation: `+=${rotationAmount}`,
+            transformOrigin: "50% 50%", // Use center of the element
+            ease: "sine.inOut",
+            repeat: -1,
+            yoyo: true
+        });
+    }
 }
