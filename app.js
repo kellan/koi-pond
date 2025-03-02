@@ -1,11 +1,30 @@
 // Koi Pond Animation
+// Debug mode flag - set to true to enable console logging
+window.DEBUG = false;
+
+// Debug logging function
+function debug(...args) {
+    if (window.DEBUG) {
+        console.log(...args);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('App loaded');
+    debug('App loaded');
     initKoiPond();
 
     // Add click event listener to create new koi fish
     document.getElementById('pond-container').addEventListener('click', function (event) {
         createKoiAtClick(event);
+    });
+    
+    // Add keyboard shortcut to toggle debug mode (press 'D' key)
+    document.addEventListener('keydown', function(event) {
+        // Check if the D key was pressed
+        if (event.key === 'd' || event.key === 'D') {
+            window.DEBUG = !window.DEBUG;
+            console.log(`Debug mode ${window.DEBUG ? 'enabled' : 'disabled'}`);
+        }
     });
 });
 
@@ -83,14 +102,14 @@ function initKoiPond() {
 }
 
 function createKoiFish(svg) {
-    console.log("=== FISH CREATION STARTED ===");
+    debug("=== FISH CREATION STARTED ===");
     // Create more fish at different edges with directions that will take them across the screen
     const fishCount = 5; // Increased from 2 to 5 initial fish
     const koiFish = [];
 
     // Create fish at various positions
     // First fish - starts at left edge, swimming right
-    console.log("Creating fish 1 (left edge)");
+    debug("Creating fish 1 (left edge)");
     const koi1 = createSingleKoi({
         x: 50,
         y: 200,
@@ -98,11 +117,11 @@ function createKoiFish(svg) {
         scale: 0.7,   // Smaller scale
         spotCount: 3  // 3 kohaku patches
     });
-    console.log("Fish 1 created:", koi1 ? "SUCCESS" : "FAILED");
+    debug("Fish 1 created:", koi1 ? "SUCCESS" : "FAILED");
     if (koi1) koiFish.push(koi1);
 
     // Second fish - starts at bottom edge, swimming up
-    console.log("Creating fish 2 (bottom edge)");
+    debug("Creating fish 2 (bottom edge)");
     const koi2 = createSingleKoi({
         x: 700,
         y: 550,
@@ -110,11 +129,11 @@ function createKoiFish(svg) {
         scale: 0.6,     // Smaller scale
         spotCount: 2    // 2 kohaku patches
     });
-    console.log("Fish 2 created:", koi2 ? "SUCCESS" : "FAILED");
+    debug("Fish 2 created:", koi2 ? "SUCCESS" : "FAILED");
     if (koi2) koiFish.push(koi2);
 
     // Third fish - starts at top edge, swimming down
-    console.log("Creating fish 3 (top edge)");
+    debug("Creating fish 3 (top edge)");
     const koi3 = createSingleKoi({
         x: 300,
         y: 50,
@@ -122,11 +141,11 @@ function createKoiFish(svg) {
         scale: 0.5,    // Smaller scale
         spotCount: 4   // 4 kohaku patches
     });
-    console.log("Fish 3 created:", koi3 ? "SUCCESS" : "FAILED");
+    debug("Fish 3 created:", koi3 ? "SUCCESS" : "FAILED");
     if (koi3) koiFish.push(koi3);
 
     // Fourth fish - starts at right edge, swimming left
-    console.log("Creating fish 4 (right edge)");
+    debug("Creating fish 4 (right edge)");
     const koi4 = createSingleKoi({
         x: 950,
         y: 350,
@@ -134,11 +153,11 @@ function createKoiFish(svg) {
         scale: 0.65,    // Smaller scale
         spotCount: 3    // 3 kohaku patches
     });
-    console.log("Fish 4 created:", koi4 ? "SUCCESS" : "FAILED");
+    debug("Fish 4 created:", koi4 ? "SUCCESS" : "FAILED");
     if (koi4) koiFish.push(koi4);
 
     // Fifth fish - starts in the middle, swimming diagonally
-    console.log("Creating fish 5 (middle)");
+    debug("Creating fish 5 (middle)");
     const koi5 = createSingleKoi({
         x: 500,
         y: 300,
@@ -146,15 +165,15 @@ function createKoiFish(svg) {
         scale: 0.55,   // Smaller scale
         spotCount: 2   // 2 kohaku patches
     });
-    console.log("Fish 5 created:", koi5 ? "SUCCESS" : "FAILED");
+    debug("Fish 5 created:", koi5 ? "SUCCESS" : "FAILED");
     if (koi5) koiFish.push(koi5);
 
     // Verify that fish were created successfully
-    console.log(`Created ${koiFish.length} koi fish out of ${fishCount} attempted`);
+    debug(`Created ${koiFish.length} koi fish out of ${fishCount} attempted`);
 
     // Insert the koi fish at the beginning of the SVG so they appear under lily pads
     // Use insertBefore with the first child to ensure they're at the bottom of the stack
-    console.log("Adding fish to SVG, fish array length:", koiFish.length);
+    debug("Adding fish to SVG, fish array length:", koiFish.length);
     let fishAdded = 0;
     
     if (svg.firstChild) {
@@ -163,7 +182,7 @@ function createKoiFish(svg) {
                 try {
                     svg.insertBefore(koi, svg.firstChild);
                     fishAdded++;
-                    console.log(`Fish ${index + 1} added to SVG successfully`);
+                    debug(`Fish ${index + 1} added to SVG successfully`);
                 } catch (error) {
                     console.error(`Error adding fish ${index + 1} to SVG:`, error);
                 }
@@ -177,7 +196,7 @@ function createKoiFish(svg) {
                 try {
                     svg.appendChild(koi);
                     fishAdded++;
-                    console.log(`Fish ${index + 1} added to SVG successfully`);
+                    debug(`Fish ${index + 1} added to SVG successfully`);
                 } catch (error) {
                     console.error(`Error adding fish ${index + 1} to SVG:`, error);
                 }
@@ -189,8 +208,8 @@ function createKoiFish(svg) {
 
     // Double-check that fish were added to the SVG
     const fishInSvg = svg.querySelectorAll('.koi').length;
-    console.log(`Added ${fishAdded} koi fish to the SVG (direct count)`);
-    console.log(`SVG contains ${fishInSvg} elements with class 'koi' (query count)`);
+    debug(`Added ${fishAdded} koi fish to the SVG (direct count)`);
+    debug(`SVG contains ${fishInSvg} elements with class 'koi' (query count)`);
 
     // If no fish were added, try again with a simpler approach
     if (fishInSvg === 0) {
@@ -205,18 +224,18 @@ function createKoiFish(svg) {
 
         if (emergencyKoi) {
             svg.appendChild(emergencyKoi);
-            console.log("Added emergency fallback fish");
+            debug("Added emergency fallback fish");
         }
     }
 }
 
 function createSingleKoi(options) {
-    console.log("Starting createSingleKoi with options:", JSON.stringify(options));
+    debug("Starting createSingleKoi with options:", JSON.stringify(options));
     const koiGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     koiGroup.classList.add('koi');
     koiGroup.setAttribute('transform', `translate(${options.x}, ${options.y}) rotate(${options.rotation}) scale(${options.scale})`);
     koiGroup.setAttribute('opacity', '1'); // Ensure full opacity for new fish
-    console.log("Created koi group element");
+    debug("Created koi group element");
 
     // Create koi body (white ellipse) - scaled down
     const body = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
@@ -234,11 +253,11 @@ function createSingleKoi(options) {
     koiGroup.appendChild(tail);
 
     // Create a clipping path for the spots to stay within the fish body
-    console.log("Creating clip path");
+    debug("Creating clip path");
     const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
     const clipId = `fish-clip-${Math.floor(Math.random() * 10000)}`; // Unique ID
     clipPath.setAttribute('id', clipId);
-    console.log("Clip path ID:", clipId);
+    debug("Clip path ID:", clipId);
 
     // Add the body shape to the clip path - scaled down
     const clipBody = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
@@ -254,13 +273,13 @@ function createSingleKoi(options) {
     
     // Add the defs with clip path to the koi group
     koiGroup.appendChild(defs);
-    console.log("Added clip path in defs to koi group");
+    debug("Added clip path in defs to koi group");
 
     // Create a group for the spots that will use the clip path
     const spotsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     spotsGroup.setAttribute('clip-path', `url(#${clipId})`);
     koiGroup.appendChild(spotsGroup);
-    console.log("Created spots group with clip-path reference");
+    debug("Created spots group with clip-path reference");
 
     // Track placed spots to avoid overlap
     const placedSpots = [];
@@ -487,7 +506,7 @@ function createSingleKoi(options) {
         return patch;
     }
 
-    console.log("Completed createSingleKoi successfully");
+    debug("Completed createSingleKoi successfully");
     return koiGroup;
 }
 
@@ -611,7 +630,7 @@ function createLilyPads(svg) {
             // If we've tried too many times, reduce the number of lily pads
             if (attempts > maxAttempts * 0.5 && i > 5) {
                 // Break out of the loop early if placement is too difficult
-                console.log("Too many placement attempts, stopping lily pad creation at", i, "out of", targetLilyPadCount);
+                debug("Too many placement attempts, stopping lily pad creation at", i, "out of", targetLilyPadCount);
                 break;
             }
         }
@@ -619,26 +638,26 @@ function createLilyPads(svg) {
 }
 
 function animateElements() {
-    console.log("=== ANIMATION STARTED ===");
+    debug("=== ANIMATION STARTED ===");
     
     // Animate koi fish
     const koi = document.querySelectorAll('.koi');
-    console.log(`Found ${koi.length} koi fish elements to animate`);
+    debug(`Found ${koi.length} koi fish elements to animate`);
     
     koi.forEach((fish, index) => {
         // Only animate fish that don't already have animations
         if (!fish.hasAttribute('data-animated')) {
-            console.log(`Animating fish ${index + 1}`);
+            debug(`Animating fish ${index + 1}`);
             animateKoi(fish);
             fish.setAttribute('data-animated', 'true');
         } else {
-            console.log(`Fish ${index + 1} already animated`);
+            debug(`Fish ${index + 1} already animated`);
         }
     });
 
     // Animate lily pads
     const lilyPads = document.querySelectorAll('.lily-pad');
-    console.log(`Found ${lilyPads.length} lily pads to animate`);
+    debug(`Found ${lilyPads.length} lily pads to animate`);
     
     lilyPads.forEach((pad, index) => {
         // Only animate lily pads that don't already have animations
@@ -648,7 +667,7 @@ function animateElements() {
         }
     });
     
-    console.log("Animation setup complete");
+    debug("Animation setup complete");
 }
 
 function animateKoi(koi) {
