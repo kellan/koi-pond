@@ -221,7 +221,28 @@ function createSingleKoi(options) {
 
 function createLilyPads(svg) {
     const lilyPadCount = 6 + Math.floor(Math.random() * 3); // Reduced to 6-8 lily pads for better spacing
-    const colors = ['#3a7d44', '#81b29a', '#3d405b', '#4d7ea8', '#2b6777'];
+    // Colors from the image - vibrant circles in various colors
+    const colors = [
+        '#f94144', // bright red
+        '#f3722c', // orange
+        '#f8961e', // light orange
+        '#f9c74f', // yellow
+        '#90be6d', // light green
+        '#43aa8b', // teal
+        '#4d908e', // dark teal
+        '#577590', // blue
+        '#277da1', // dark blue
+        '#9d4edd', // purple
+        '#e63946', // red
+        '#ff9f1c', // orange
+        '#ffbf69', // light orange
+        '#2ec4b6', // turquoise
+        '#ff595e', // coral
+        '#ffca3a', // yellow
+        '#8ac926', // green
+        '#1982c4', // blue
+        '#6a4c93'  // purple
+    ];
     const placedLilyPads = [];
     // Fish is about 160 units long, lily pad base size should be similar
     const baseScale = 1.6; // Increased to make lily pads roughly the same diameter as fish length

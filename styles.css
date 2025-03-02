@@ -8,7 +8,7 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #000000;
+    background-color: #0a1128; /* Deep navy blue like in the image */
     position: fixed;
     top: 0;
     left: 0;
